@@ -3,9 +3,15 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"yojana-portal/backend/internal/db"
 	"yojana-portal/backend/internal/models"
@@ -410,4 +416,269 @@ func containsString(list []string, value string) bool {
 		}
 	}
 	return false
+}
+
+// RegisterHandler inserts new user credentials and profile information atomically
+func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.RegisterRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" || req.Phone == "" || req.Password == "" || req.FullName == "" {
+		http.Error(w, "Missing required registration parameters", http.StatusBadRequest)
+		return
+	}
+
+	// Check email/phone uniqueness
+	var exists bool
+	queryCheck := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 OR phone = $2)"
+	err = db.DB.QueryRow(queryCheck, req.Email, req.Phone).Scan(&exists)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		http.Error(w, "Email or phone number is already registered", http.StatusBadRequest)
+		return
+	}
+
+	// Hashing
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Failed to hash password: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Begin Transaction
+	tx, err := db.DB.Begin()
+	if err != nil {
+		http.Error(w, "Transaction initialization failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+
+	// Insert User
+	var userID int
+	queryUser := `
+		INSERT INTO users (email, phone, password_hash, is_verified, is_admin)
+		VALUES ($1, $2, $3, false, false) RETURNING id`
+	err = tx.QueryRow(queryUser, req.Email, req.Phone, string(hash)).Scan(&userID)
+	if err != nil {
+		http.Error(w, "Failed to insert user account: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Insert User Profile
+	queryProfile := `
+		INSERT INTO user_profiles (
+			user_id, full_name, date_of_birth, gender, state, district,
+			caste_category, annual_income, occupation, employee_type,
+			education_level, is_disabled
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+	_, err = tx.Exec(
+		queryProfile, userID, req.FullName, req.DateOfBirth, req.Gender, req.State, req.District,
+		req.CasteCategory, req.AnnualIncome, req.Occupation, req.EmployeeType,
+		req.EducationLevel, req.IsDisabled,
+	)
+	if err != nil {
+		http.Error(w, "Failed to insert user profile: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Commit Transaction
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, "Failed to commit user registration: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User account registered successfully!",
+	})
+}
+
+// LoginHandler matches raw password with hash and issues signed JWT bearer tokens
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid login format: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Join User and Profile to fetch all in one query
+	var userID int
+	var email, phone, passwordHash string
+	var isAdmin bool
+	var profile models.UserProfile
+
+	query := `
+		SELECT u.id, u.email, u.phone, u.password_hash, u.is_admin,
+		       p.id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
+		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
+		       p.education_level, p.is_disabled
+		FROM users u
+		JOIN user_profiles p ON u.id = p.user_id
+		WHERE u.email = $1`
+
+	err = db.DB.QueryRow(query, req.Email).Scan(
+		&userID, &email, &phone, &passwordHash, &isAdmin,
+		&profile.ID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
+		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
+		&profile.EducationLevel, &profile.IsDisabled,
+	)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, "Database lookup error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Verify Hash
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password))
+	if err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Issuer JWT
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "super-secure-32-char-jwt-secret-key-majhigov"
+	}
+
+	expiryHoursStr := os.Getenv("JWT_EXPIRY_HOURS")
+	expiryHours := 24
+	if eh, err := strconv.Atoi(expiryHoursStr); err == nil {
+		expiryHours = eh
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  userID,
+		"email":    email,
+		"is_admin": isAdmin,
+		"exp":      time.Now().Add(time.Hour * time.Duration(expiryHours)).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		http.Error(w, "Failed to sign authentication token: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	profile.UserID = userID
+	resp := models.AuthResponse{
+		Success: true,
+		Message: "Login successful!",
+		Token:   tokenString,
+		Profile: &profile,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// GetUserProfileHandler extracts, decodes, and parses Bearer token to return user profile
+func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		http.Error(w, "Missing or invalid authorization header", http.StatusUnauthorized)
+		return
+	}
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "super-secure-32-char-jwt-secret-key-majhigov"
+	}
+
+	// Parse Token
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid or expired session token", http.StatusUnauthorized)
+		return
+	}
+
+	// Extract Claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Invalid token format claims", http.StatusUnauthorized)
+		return
+	}
+
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		http.Error(w, "Missing user session identification in token", http.StatusUnauthorized)
+		return
+	}
+	userID := int(userIDFloat)
+
+	// Fetch Profile
+	var profile models.UserProfile
+	query := `
+		SELECT id, user_id, full_name, date_of_birth, gender, state, district,
+		       caste_category, annual_income, occupation, employee_type,
+		       education_level, is_disabled
+		FROM user_profiles
+		WHERE user_id = $1`
+
+	err = db.DB.QueryRow(query, userID).Scan(
+		&profile.ID, &profile.UserID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
+		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
+		&profile.EducationLevel, &profile.IsDisabled,
+	)
+	if err == sql.ErrNoRows {
+		http.Error(w, "User profile not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Database retrieval error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"profile": profile,
+	})
 }

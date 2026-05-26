@@ -28,6 +28,9 @@ func main() {
 	http.HandleFunc("/api/schemes", handlers.GetSchemesHandler)
 	http.HandleFunc("/api/schemes/", handlers.GetSchemeDetailsHandler) // Handles /api/schemes/:id
 	http.HandleFunc("/api/eligibility-check", handlers.CheckEligibilityHandler)
+	http.HandleFunc("/api/auth/register", handlers.RegisterHandler)
+	http.HandleFunc("/api/auth/login", handlers.LoginHandler)
+	http.HandleFunc("/api/user/profile", handlers.GetUserProfileHandler)
 
 	// Fetch PORT from environment
 	port := os.Getenv("PORT")

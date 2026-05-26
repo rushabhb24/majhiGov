@@ -182,3 +182,36 @@ type EligibilityResponse struct {
 	Eligible    []EligibilityStatus `json:"eligible"`
 	NotEligible []EligibilityStatus `json:"not_eligible"`
 }
+
+// RegisterRequest carries credentials and profile fields for registering
+type RegisterRequest struct {
+	Email          string  `json:"email"`
+	Phone          string  `json:"phone"`
+	Password       string  `json:"password"`
+	FullName       string  `json:"full_name"`
+	DateOfBirth    string  `json:"date_of_birth"`
+	Gender         string  `json:"gender"`
+	State          string  `json:"state"`
+	District       string  `json:"district"`
+	CasteCategory  string  `json:"caste_category"`
+	AnnualIncome   float64 `json:"annual_income"`
+	Occupation     string  `json:"occupation"`
+	EmployeeType   string  `json:"employee_type"`
+	EducationLevel string  `json:"education_level"`
+	IsDisabled     bool    `json:"is_disabled"`
+}
+
+// LoginRequest carries user login credentials
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// AuthResponse carries session JWT and logged-in profile data
+type AuthResponse struct {
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	Token   string       `json:"token,omitempty"`
+	Profile *UserProfile `json:"profile,omitempty"`
+}
+

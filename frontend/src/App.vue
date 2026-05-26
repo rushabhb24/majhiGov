@@ -26,6 +26,36 @@ const selectedCategory = ref('All');
 const sortBy = ref('date_desc');
 const ruralMode = ref(false);
 
+// Auth & Session Reactive States (Option A)
+const token = ref(localStorage.getItem('yojana_auth_token') || null);
+const userProfile = ref(null);
+const authModalOpen = ref(false);
+const authTab = ref('login'); // 'login' or 'register'
+
+// Registration form data binding
+const regForm = ref({
+  email: '',
+  phone: '',
+  password: '',
+  full_name: '',
+  date_of_birth: '1995-01-01',
+  gender: 'Male',
+  state: 'Maharashtra',
+  district: 'Pune',
+  caste_category: 'General',
+  annual_income: 150000,
+  occupation: 'Unemployed',
+  employee_type: 'Unemployed',
+  education_level: 'Graduate',
+  is_disabled: false
+});
+
+// Login form data binding
+const loginForm = ref({
+  email: '',
+  password: ''
+});
+
 // Saved Bookmarks state
 const savedSchemeIds = ref([]);
 
@@ -108,7 +138,20 @@ const t = computed(() => {
       toastSaved: 'Scheme saved to your profile!',
       toastRemoved: 'Scheme removed from your profile.',
       toastSuccess: 'Eligibility calculated successfully!',
-      toastFail: 'Could not connect to Go backend.'
+      toastFail: 'Could not connect to Go backend.',
+      loginRegister: 'Login / Register',
+      logout: 'Logout',
+      emailLabel: 'Email Address',
+      phoneLabel: 'Phone Number',
+      passwordLabel: 'Password',
+      fullNameLabel: 'Full Name',
+      dobLabel: 'Date of Birth (YYYY-MM-DD)',
+      districtLabel: 'District',
+      submitting: 'Processing...',
+      profilePrefilledToast: 'Account logged in & eligibility profile prefilled!',
+      loginSuccessToast: 'Welcome back! Logged in successfully.',
+      regSuccessToast: 'Registration successful! You can now log in.',
+      authErrorToast: 'Authentication failed. Please check your inputs.'
     },
     hi: {
       explorer: 'योजना खोजें',
@@ -179,7 +222,20 @@ const t = computed(() => {
       toastSaved: 'योजना सुरक्षित कर ली गई है!',
       toastRemoved: 'योजना सुरक्षित सूची से हटा दी गई है।',
       toastSuccess: 'पात्रता की गणना सफलतापूर्वक की गई!',
-      toastFail: 'गो (Go) बैकएंड से कनेक्ट नहीं हो सका।'
+      toastFail: 'गो (Go) बैकएंड से कनेक्ट नहीं हो सका।',
+      loginRegister: 'लॉगिन / पंजीकरण',
+      logout: 'लॉगआऊट',
+      emailLabel: 'ईमेल पता',
+      phoneLabel: 'फ़ोन नंबर',
+      passwordLabel: 'पासवर्ड',
+      fullNameLabel: 'पूरा नाम',
+      dobLabel: 'जन्म तिथि (YYYY-MM-DD)',
+      districtLabel: 'जिला',
+      submitting: 'प्रक्रिया जारी है...',
+      profilePrefilledToast: 'खाता लॉगिन हो गया और योग्यता प्रोफ़ाइल भर दी गई!',
+      loginSuccessToast: 'आपका स्वागत है! लॉगिन सफल रहा।',
+      regSuccessToast: 'पंजीकरण सफल! अब आप लॉगिन कर सकते हैं।',
+      authErrorToast: 'प्रमाणीकरण विफल। कृपया इनपुट की जांच करें।'
     },
     mr: {
       explorer: 'योजना शोधा',
@@ -250,7 +306,20 @@ const t = computed(() => {
       toastSaved: 'योजना यशस्वीरित्या जतन केली!',
       toastRemoved: 'योजना जतन सूचीतून काढली.',
       toastSuccess: 'पात्रतेची गणना यशस्वी झाली!',
-      toastFail: 'गो (Go) बॅकएंडशी संपर्क होऊ शकला नाही.'
+      toastFail: 'गो (Go) बॅकएंडशी संपर्क होऊ शकला नाही.',
+      loginRegister: 'लॉगिन / नोंदणी',
+      logout: 'लॉगआऊट',
+      emailLabel: 'ईमेल पत्ता',
+      phoneLabel: 'फोन नंबर',
+      passwordLabel: 'पासवर्ड',
+      fullNameLabel: 'पूर्ण नाव',
+      dobLabel: 'जन्मतारीख (YYYY-MM-DD)',
+      districtLabel: 'जिल्हा',
+      submitting: 'प्रक्रिया सुरू आहे...',
+      profilePrefilledToast: 'खाते लॉगिन झाले आणि पात्रता प्रोफाइल भरली गेली!',
+      loginSuccessToast: 'पुन्हा स्वागत आहे! लॉगिन यशस्वी झाले.',
+      regSuccessToast: 'नोंदणी यशस्वी! आता तुम्ही लॉगिन करू शकता.',
+      authErrorToast: 'प्रमाणीकरण अयशस्वी. कृपया प्रविष्ट केलेली माहिती तपासा.'
     }
   };
   return dictionary[currentLanguage.value];
@@ -288,6 +357,158 @@ function showToast(msg, type = 'success') {
   setTimeout(() => {
     toast.value.show = false;
   }, 3000);
+}
+
+// Async Authentication Functions (Option A)
+const authSubmitting = ref(false);
+
+async function registerUser() {
+  authSubmitting.value = true;
+  try {
+    const payload = {
+      email: regForm.value.email,
+      phone: regForm.value.phone,
+      password: regForm.value.password,
+      full_name: regForm.value.full_name,
+      date_of_birth: regForm.value.date_of_birth,
+      gender: regForm.value.gender,
+      state: regForm.value.state,
+      district: regForm.value.district,
+      caste_category: regForm.value.caste_category,
+      annual_income: Number(regForm.value.annual_income),
+      occupation: regForm.value.occupation,
+      employee_type: regForm.value.employee_type,
+      education_level: regForm.value.education_level,
+      is_disabled: regForm.value.is_disabled
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Registration failed');
+    }
+
+    showToast(t.value.regSuccessToast, 'success');
+    authTab.value = 'login';
+    // Transfer email for convenience
+    loginForm.value.email = regForm.value.email;
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || t.value.authErrorToast, 'danger');
+  } finally {
+    authSubmitting.value = false;
+  }
+}
+
+async function loginUser() {
+  authSubmitting.value = true;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(loginForm.value)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Invalid credentials');
+    }
+
+    const data = await response.json();
+    if (data.success && data.token) {
+      token.value = data.token;
+      userProfile.value = data.profile;
+      localStorage.setItem('yojana_auth_token', data.token);
+
+      // Auto-prefilling logic
+      prefillEligibilityFromProfile(data.profile);
+
+      showToast(t.value.loginSuccessToast, 'success');
+      authModalOpen.value = false;
+      // Reset form
+      loginForm.value.password = '';
+    } else {
+      throw new Error('Authentication response was invalid');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || t.value.authErrorToast, 'danger');
+  } finally {
+    authSubmitting.value = false;
+  }
+}
+
+function prefillEligibilityFromProfile(profile) {
+  if (!profile) return;
+  
+  // Calculate age based on Date of Birth
+  let calculatedAge = 25; // default fallback
+  if (profile.date_of_birth) {
+    const dob = new Date(profile.date_of_birth);
+    const diffMs = Date.now() - dob.getTime();
+    const ageDate = new Date(diffMs);
+    calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
+  }
+
+  eligibilityProfile.value = {
+    age: calculatedAge,
+    gender: profile.gender || 'Male',
+    state: profile.state || 'Maharashtra',
+    caste: profile.caste_category || 'General',
+    annual_income: profile.annual_income || 150000,
+    occupation: profile.occupation || 'Unemployed',
+    employee_type: profile.employee_type || 'Unemployed',
+    education_level: profile.education_level || 'Graduate',
+    is_disabled: profile.is_disabled || false
+  };
+
+  showToast(t.value.profilePrefilledToast, 'info');
+}
+
+async function fetchUserProfile() {
+  if (!token.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      }
+    });
+
+    if (response.status === 401) {
+      logoutUser();
+      return;
+    }
+
+    if (!response.ok) throw new Error('Failed to fetch user profile');
+
+    const data = await response.json();
+    if (data.success && data.profile) {
+      userProfile.value = data.profile;
+      // Prefill eligibility automatically
+      prefillEligibilityFromProfile(data.profile);
+    }
+  } catch (err) {
+    console.error('Session restoration failed:', err);
+    token.value = null;
+    localStorage.removeItem('yojana_auth_token');
+  }
+}
+
+function logoutUser() {
+  token.value = null;
+  userProfile.value = null;
+  localStorage.removeItem('yojana_auth_token');
+  showToast(t.value.logout || 'Logged out successfully', 'info');
 }
 
 // Fetch active schemes from Go relational backend
@@ -407,6 +628,9 @@ watch(searchQu, () => {
 onMounted(() => {
   fetchSchemes();
   loadBookmarks();
+  if (token.value) {
+    fetchUserProfile();
+  }
 });
 </script>
 
@@ -420,6 +644,9 @@ onMounted(() => {
       v-model:theme="theme"
       :saved-count="savedSchemeIds.length"
       :t="t"
+      :user="userProfile"
+      @loginClick="authModalOpen = true; authTab = 'login'"
+      @logout="logoutUser"
     />
 
     <!-- Main Viewport Shell -->
@@ -515,6 +742,235 @@ onMounted(() => {
       :message="toast.message"
       :type="toast.type"
     />
+
+    <!-- Beautiful Glassmorphic Auth Modal (Option A) -->
+    <Transition name="modal-fade">
+      <div v-if="authModalOpen" class="modal-overlay" @click.self="authModalOpen = false">
+        <div class="modal-content card" style="max-width: 580px; width: 100%;">
+          <button class="btn-close-modal" @click="authModalOpen = false" title="Close Modal">×</button>
+          
+          <!-- Auth Tabs -->
+          <div class="auth-tabs">
+            <button 
+              :class="['auth-tab-btn', { active: authTab === 'login' }]"
+              @click="authTab = 'login'"
+            >
+              {{ t.loginRegister.split(' / ')[0] }}
+            </button>
+            <button 
+              :class="['auth-tab-btn', { active: authTab === 'register' }]"
+              @click="authTab = 'register'"
+            >
+              {{ t.loginRegister.split(' / ')[1] }}
+            </button>
+          </div>
+
+          <!-- Login form -->
+          <form v-if="authTab === 'login'" @submit.prevent="loginUser" class="auth-form mt-4">
+            <div class="form-group">
+              <label class="form-label">{{ t.emailLabel }} *</label>
+              <input 
+                v-model="loginForm.email" 
+                type="email" 
+                class="form-control" 
+                placeholder="citizen@gov.in" 
+                required 
+              />
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">{{ t.passwordLabel }} *</label>
+              <input 
+                v-model="loginForm.password" 
+                type="password" 
+                class="form-control" 
+                placeholder="••••••••" 
+                required 
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              class="btn btn-primary mt-4" 
+              :disabled="authSubmitting"
+            >
+              {{ authSubmitting ? t.submitting : t.loginRegister.split(' / ')[0] }}
+            </button>
+          </form>
+
+          <!-- Register form -->
+          <form v-else @submit.prevent="registerUser" class="auth-form mt-4">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">{{ t.fullNameLabel }} *</label>
+                <input 
+                  v-model="regForm.full_name" 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Ram Prasad" 
+                  required 
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t.dobLabel }} *</label>
+                <input 
+                  v-model="regForm.date_of_birth" 
+                  type="date" 
+                  class="form-control" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">{{ t.emailLabel }} *</label>
+                <input 
+                  v-model="regForm.email" 
+                  type="email" 
+                  class="form-control" 
+                  placeholder="ram@gov.in" 
+                  required 
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t.phoneLabel }} *</label>
+                <input 
+                  v-model="regForm.phone" 
+                  type="tel" 
+                  class="form-control" 
+                  placeholder="9876543210" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">{{ t.passwordLabel }} *</label>
+              <input 
+                v-model="regForm.password" 
+                type="password" 
+                class="form-control" 
+                placeholder="Create secure password" 
+                required 
+              />
+            </div>
+
+            <hr class="divider mt-2" />
+            <h4 class="form-section-title mt-2" style="font-size: 0.9rem; color: var(--clr-primary);">Demographic Details (Eligibility Wizard Pre-fill)</h4>
+
+            <div class="form-row mt-2">
+              <div class="form-group">
+                <label class="form-label">{{ t.genderLabel }} *</label>
+                <select v-model="regForm.gender" class="form-control" required>
+                  <option value="Male">{{ t.maleOpt }}</option>
+                  <option value="Female">{{ t.femaleOpt }}</option>
+                  <option value="Other">{{ t.otherOpt }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t.casteLabel }} *</label>
+                <select v-model="regForm.caste_category" class="form-control" required>
+                  <option value="General">General / Open</option>
+                  <option value="OBC">OBC</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">{{ t.stateLabel }} *</label>
+                <select v-model="regForm.state" class="form-control" required>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Gujarat">Gujarat</option>
+                  <option value="Madhya Pradesh">Madhya Pradesh</option>
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="All">All India</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t.districtLabel }} *</label>
+                <input 
+                  v-model="regForm.district" 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Pune" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">{{ t.incomeLabel }} *</label>
+                <input 
+                  v-model="regForm.annual_income" 
+                  type="number" 
+                  class="form-control" 
+                  required 
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t.occupationLabel }} *</label>
+                <select v-model="regForm.occupation" class="form-control" required>
+                  <option value="Farmer">Farmer</option>
+                  <option value="Student">Student</option>
+                  <option value="Business Owner">Business Owner</option>
+                  <option value="Unemployed">Unemployed</option>
+                  <option value="Retired">Retired / Senior Citizen</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">{{ t.employeeTypeLabel }} *</label>
+                <select v-model="regForm.employee_type" class="form-control" required>
+                  <option value="Unemployed">Unemployed</option>
+                  <option value="Private Employee">Private Sector</option>
+                  <option value="Government Employee">Government Sector</option>
+                  <option value="Self Employed">Self Employed</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t.educationLabel }} *</label>
+                <select v-model="regForm.education_level" class="form-control" required>
+                  <option value="10th Pass">10th Standard or lower</option>
+                  <option value="12th Pass">12th Standard</option>
+                  <option value="Undergraduate">Undergraduate Degree</option>
+                  <option value="Graduate">Graduate / Master Degree</option>
+                  <option value="Post Graduate">Doctorate / Specialist</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">{{ t.disabilityLabel }}</label>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input 
+                  type="checkbox" 
+                  id="regIsDisabled" 
+                  v-model="regForm.is_disabled" 
+                  style="width: 20px; height: 20px; cursor: pointer;"
+                />
+                <label for="regIsDisabled" style="cursor: pointer; font-size: 0.9rem;">Yes, I am differently-abled / Haan, mai divyang hu</label>
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              class="btn btn-primary mt-4" 
+              :disabled="authSubmitting"
+            >
+              {{ authSubmitting ? t.submitting : t.loginRegister.split(' / ')[1] }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 

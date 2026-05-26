@@ -7,6 +7,8 @@ import vueLogo from '../assets/vue.svg'
 const count = ref(0)
 </script>
 
+<!-- This is a comment  -->
+
 <template>
   <section id="center">
     <div class="hero">
