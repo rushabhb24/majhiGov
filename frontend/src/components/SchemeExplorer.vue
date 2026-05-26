@@ -41,6 +41,10 @@ const props = defineProps({
   t: {
     type: Object,
     required: true
+  },
+  isLoggedIn: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -50,7 +54,8 @@ const emit = defineEmits([
   'update:searchQu',
   'toggleBookmark',
   'openDetails',
-  'retry'
+  'retry',
+  'loginRequired'
 ]);
 
 function getCategoryName(categoryName) {
@@ -145,8 +150,10 @@ function getCategoryName(categoryName) {
         :current-language="currentLanguage"
         :saved-scheme-ids="savedSchemeIds"
         :t="t"
+        :is-logged-in="isLoggedIn"
         @toggle-bookmark="emit('toggleBookmark', $event)"
         @open-details="emit('openDetails', $event)"
+        @login-required="emit('loginRequired', $event)"
       />
     </div>
   </div>

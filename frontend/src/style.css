@@ -334,7 +334,7 @@ select.form-control {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 16px 24px;
   width: 100%;
   max-width: var(--max-width);
@@ -391,7 +391,7 @@ select.form-control {
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--clr-text-muted);
-  padding: 10px 20px;
+  padding: 8px 14px;
   border-radius: var(--border-radius-full);
   transition: all var(--transition-normal);
   cursor: pointer;
@@ -435,7 +435,7 @@ select.form-control {
   border-radius: var(--border-radius-full) !important;
   cursor: pointer;
   background-color: var(--clr-surface-alt) !important;
-  max-width: 180px;
+  max-width: 130px;
 }
 
 .btn-toggle {
@@ -1698,4 +1698,30 @@ select.form-control {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+}
+
+/* Auth Scroll Area for long forms */
+.auth-scroll-area {
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 12px;
+  margin-right: -4px;
+}
+
+/* Elegant Modern Scrollbar styling */
+.auth-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--clr-primary-glow);
+  border-radius: var(--border-radius-full);
+}
+
+.auth-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--clr-primary);
 }

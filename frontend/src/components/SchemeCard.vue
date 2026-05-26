@@ -15,10 +15,14 @@ const props = defineProps({
   t: {
     type: Object,
     required: true
+  },
+  isLoggedIn: {
+    type: Boolean,
+    default: false
   }
 });
 
-const emit = defineEmits(['toggleBookmark', 'openDetails']);
+const emit = defineEmits(['toggleBookmark', 'openDetails', 'loginRequired']);
 
 // Dynamic multi-language getters for schemes data
 function getSchemeTitle(scheme) {
@@ -95,10 +99,23 @@ function getCategoryName(scheme) {
       <button class="btn btn-secondary flex-grow" @click="emit('openDetails', scheme)">
         {{ t.viewDetails }}
       </button>
-      <a :href="scheme.apply_link" target="_blank" class="btn btn-primary" rel="noopener noreferrer">
+      <a 
+        v-if="isLoggedIn"
+        :href="scheme.apply_link" 
+        target="_blank" 
+        class="btn btn-primary" 
+        rel="noopener noreferrer"
+      >
         {{ t.applyLink }} 
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </a>
+      <button 
+        v-else 
+        class="btn btn-primary"
+        @click.stop="emit('loginRequired', 'apply')"
+      >
+        🔒 {{ t.loginToApply || 'Login to Apply' }}
+      </button>
     </div>
   </article>
 </template>

@@ -21,10 +21,14 @@ const props = defineProps({
   t: {
     type: Object,
     required: true
+  },
+  isLoggedIn: {
+    type: Boolean,
+    default: false
   }
 });
 
-const emit = defineEmits(['close', 'toggleBookmark']);
+const emit = defineEmits(['close', 'toggleBookmark', 'loginRequired']);
 
 const activeFaqIndex = ref(null);
 
@@ -145,9 +149,22 @@ function getCategoryName(scheme) {
           <button class="btn btn-secondary" @click="emit('toggleBookmark', scheme.id)">
             {{ savedSchemeIds.includes(scheme.id) ? t.removeSavedBtn : t.saveSchemeBtn }}
           </button>
-          <a :href="scheme.apply_link" target="_blank" class="btn btn-primary text-center" rel="noopener noreferrer">
+          <a 
+            v-if="isLoggedIn"
+            :href="scheme.apply_link" 
+            target="_blank" 
+            class="btn btn-primary text-center" 
+            rel="noopener noreferrer"
+          >
             {{ t.directApplyBtn }}
           </a>
+          <button 
+            v-else 
+            class="btn btn-primary text-center"
+            @click="emit('loginRequired', 'apply')"
+          >
+            🔒 {{ t.loginToApply || 'Login to Apply' }}
+          </button>
         </div>
       </div>
     </div>

@@ -151,7 +151,9 @@ const t = computed(() => {
       profilePrefilledToast: 'Account logged in & eligibility profile prefilled!',
       loginSuccessToast: 'Welcome back! Logged in successfully.',
       regSuccessToast: 'Registration successful! You can now log in.',
-      authErrorToast: 'Authentication failed. Please check your inputs.'
+      authErrorToast: 'Authentication failed. Please check your inputs.',
+      loginToApply: 'Login to Apply',
+      loginRequiredToast: 'Please login to use this feature!'
     },
     hi: {
       explorer: 'योजना खोजें',
@@ -235,7 +237,9 @@ const t = computed(() => {
       profilePrefilledToast: 'खाता लॉगिन हो गया और योग्यता प्रोफ़ाइल भर दी गई!',
       loginSuccessToast: 'आपका स्वागत है! लॉगिन सफल रहा।',
       regSuccessToast: 'पंजीकरण सफल! अब आप लॉगिन कर सकते हैं।',
-      authErrorToast: 'प्रमाणीकरण विफल। कृपया इनपुट की जांच करें।'
+      authErrorToast: 'प्रमाणीकरण विफल। कृपया इनपुट की जांच करें।',
+      loginToApply: 'आवेदन के लिए लॉगिन करें',
+      loginRequiredToast: 'कृपया इस सुविधा का उपयोग करने के लिए पहले लॉगिन करें!'
     },
     mr: {
       explorer: 'योजना शोधा',
@@ -319,7 +323,9 @@ const t = computed(() => {
       profilePrefilledToast: 'खाते लॉगिन झाले आणि पात्रता प्रोफाइल भरली गेली!',
       loginSuccessToast: 'पुन्हा स्वागत आहे! लॉगिन यशस्वी झाले.',
       regSuccessToast: 'नोंदणी यशस्वी! आता तुम्ही लॉगिन करू शकता.',
-      authErrorToast: 'प्रमाणीकरण अयशस्वी. कृपया प्रविष्ट केलेली माहिती तपासा.'
+      authErrorToast: 'प्रमाणीकरण अयशस्वी. कृपया प्रविष्ट केलेली माहिती तपासा.',
+      loginToApply: 'अर्ज करण्यासाठी लॉगिन करा',
+      loginRequiredToast: 'कृपया या वैशिष्ट्याचा वापर करण्यासाठी आधी लॉगिन करा!'
     }
   };
   return dictionary[currentLanguage.value];
@@ -546,7 +552,23 @@ function loadBookmarks() {
   }
 }
 
+function handleTabChange(newTab) {
+  if (newTab !== 'explorer' && !token.value) {
+    authTab.value = 'login';
+    authModalOpen.value = true;
+    showToast(t.value.loginRequiredToast || 'Please login to use this feature!', 'info');
+  } else {
+    activeTab.value = newTab;
+  }
+}
+
 function toggleBookmark(schemeId) {
+  if (!token.value) {
+    authTab.value = 'login';
+    authModalOpen.value = true;
+    showToast(t.value.loginRequiredToast || 'Please login to save schemes!', 'info');
+    return;
+  }
   const index = savedSchemeIds.value.indexOf(schemeId);
   if (index === -1) {
     savedSchemeIds.value.push(schemeId);
@@ -638,7 +660,8 @@ onMounted(() => {
   <div :class="['app-wrapper', { 'rural-mode': ruralMode }, theme]">
     <!-- Header component (Logo, selects, tabs, togglers) -->
     <Header 
-      v-model:activeTab="activeTab"
+      :activeTab="activeTab"
+      @update:activeTab="handleTabChange"
       v-model:currentLanguage="currentLanguage"
       v-model:ruralMode="ruralMode"
       v-model:theme="theme"
@@ -653,7 +676,7 @@ onMounted(() => {
     <main class="main-container">
       
       <!-- Premium Hero Headline banner -->
-      <Hero :t="t" @start-check="activeTab = 'eligibility'" />
+      <Hero :t="t" @start-check="handleTabChange('eligibility')" />
 
       <!-- TAB VIEW 1: SCHEME EXPLORER -->
       <SchemeExplorer 
@@ -668,9 +691,11 @@ onMounted(() => {
         :saved-scheme-ids="savedSchemeIds"
         :categories="categories"
         :t="t"
+        :is-logged-in="!!token"
         @toggle-bookmark="toggleBookmark"
         @open-details="openDetails"
         @retry="fetchSchemes"
+        @login-required="authModalOpen = true; authTab = 'login'"
       />
 
       <!-- TAB VIEW 2: SMART ELIGIBILITY CHECKER -->
@@ -718,8 +743,10 @@ onMounted(() => {
             :current-language="currentLanguage"
             :saved-scheme-ids="savedSchemeIds"
             :t="t"
+            :is-logged-in="!!token"
             @toggle-bookmark="toggleBookmark"
             @open-details="openDetails"
+            @login-required="authModalOpen = true; authTab = 'login'"
           />
         </div>
       </div>
@@ -732,8 +759,10 @@ onMounted(() => {
       :saved-scheme-ids="savedSchemeIds"
       :open="detailModalOpen"
       :t="t"
+      :is-logged-in="!!token"
       @close="closeDetails"
       @toggle-bookmark="toggleBookmark"
+      @login-required="authModalOpen = true; authTab = 'login'"
     />
 
     <!-- Frosted Notification banner alerts -->
@@ -800,163 +829,165 @@ onMounted(() => {
 
           <!-- Register form -->
           <form v-else @submit.prevent="registerUser" class="auth-form mt-4">
-            <div class="form-row">
+            <div class="auth-scroll-area">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">{{ t.fullNameLabel }} *</label>
+                  <input 
+                    v-model="regForm.full_name" 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Ram Prasad" 
+                    required 
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">{{ t.dobLabel }} *</label>
+                  <input 
+                    v-model="regForm.date_of_birth" 
+                    type="date" 
+                    class="form-control" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">{{ t.emailLabel }} *</label>
+                  <input 
+                    v-model="regForm.email" 
+                    type="email" 
+                    class="form-control" 
+                    placeholder="ram@gov.in" 
+                    required 
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">{{ t.phoneLabel }} *</label>
+                  <input 
+                    v-model="regForm.phone" 
+                    type="tel" 
+                    class="form-control" 
+                    placeholder="9876543210" 
+                    required 
+                  />
+                </div>
+              </div>
+
               <div class="form-group">
-                <label class="form-label">{{ t.fullNameLabel }} *</label>
+                <label class="form-label">{{ t.passwordLabel }} *</label>
                 <input 
-                  v-model="regForm.full_name" 
-                  type="text" 
+                  v-model="regForm.password" 
+                  type="password" 
                   class="form-control" 
-                  placeholder="Ram Prasad" 
+                  placeholder="Create secure password" 
                   required 
-                />
+                  />
               </div>
-              <div class="form-group">
-                <label class="form-label">{{ t.dobLabel }} *</label>
-                <input 
-                  v-model="regForm.date_of_birth" 
-                  type="date" 
-                  class="form-control" 
-                  required 
-                />
-              </div>
-            </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">{{ t.emailLabel }} *</label>
-                <input 
-                  v-model="regForm.email" 
-                  type="email" 
-                  class="form-control" 
-                  placeholder="ram@gov.in" 
-                  required 
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">{{ t.phoneLabel }} *</label>
-                <input 
-                  v-model="regForm.phone" 
-                  type="tel" 
-                  class="form-control" 
-                  placeholder="9876543210" 
-                  required 
-                />
-              </div>
-            </div>
+              <hr class="divider mt-2" />
+              <h4 class="form-section-title mt-2" style="font-size: 0.9rem; color: var(--clr-primary);">Demographic Details (Eligibility Wizard Pre-fill)</h4>
 
-            <div class="form-group">
-              <label class="form-label">{{ t.passwordLabel }} *</label>
-              <input 
-                v-model="regForm.password" 
-                type="password" 
-                class="form-control" 
-                placeholder="Create secure password" 
-                required 
-              />
-            </div>
+              <div class="form-row mt-2">
+                <div class="form-group">
+                  <label class="form-label">{{ t.genderLabel }} *</label>
+                  <select v-model="regForm.gender" class="form-control" required>
+                    <option value="Male">{{ t.maleOpt }}</option>
+                    <option value="Female">{{ t.femaleOpt }}</option>
+                    <option value="Other">{{ t.otherOpt }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">{{ t.casteLabel }} *</label>
+                  <select v-model="regForm.caste_category" class="form-control" required>
+                    <option value="General">General / Open</option>
+                    <option value="OBC">OBC</option>
+                    <option value="SC">SC</option>
+                    <option value="ST">ST</option>
+                  </select>
+                </div>
+              </div>
 
-            <hr class="divider mt-2" />
-            <h4 class="form-section-title mt-2" style="font-size: 0.9rem; color: var(--clr-primary);">Demographic Details (Eligibility Wizard Pre-fill)</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">{{ t.stateLabel }} *</label>
+                  <select v-model="regForm.state" class="form-control" required>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="All">All India</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">{{ t.districtLabel }} *</label>
+                  <input 
+                    v-model="regForm.district" 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Pune" 
+                    required 
+                  />
+                </div>
+              </div>
 
-            <div class="form-row mt-2">
-              <div class="form-group">
-                <label class="form-label">{{ t.genderLabel }} *</label>
-                <select v-model="regForm.gender" class="form-control" required>
-                  <option value="Male">{{ t.maleOpt }}</option>
-                  <option value="Female">{{ t.femaleOpt }}</option>
-                  <option value="Other">{{ t.otherOpt }}</option>
-                </select>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">{{ t.incomeLabel }} *</label>
+                  <input 
+                    v-model="regForm.annual_income" 
+                    type="number" 
+                    class="form-control" 
+                    required 
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">{{ t.occupationLabel }} *</label>
+                  <select v-model="regForm.occupation" class="form-control" required>
+                    <option value="Farmer">Farmer</option>
+                    <option value="Student">Student</option>
+                    <option value="Business Owner">Business Owner</option>
+                    <option value="Unemployed">Unemployed</option>
+                    <option value="Retired">Retired / Senior Citizen</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group">
-                <label class="form-label">{{ t.casteLabel }} *</label>
-                <select v-model="regForm.caste_category" class="form-control" required>
-                  <option value="General">General / Open</option>
-                  <option value="OBC">OBC</option>
-                  <option value="SC">SC</option>
-                  <option value="ST">ST</option>
-                </select>
-              </div>
-            </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">{{ t.stateLabel }} *</label>
-                <select v-model="regForm.state" class="form-control" required>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Madhya Pradesh">Madhya Pradesh</option>
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Delhi">Delhi</option>
-                  <option value="All">All India</option>
-                </select>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">{{ t.employeeTypeLabel }} *</label>
+                  <select v-model="regForm.employee_type" class="form-control" required>
+                    <option value="Unemployed">Unemployed</option>
+                    <option value="Private Employee">Private Sector</option>
+                    <option value="Government Employee">Government Sector</option>
+                    <option value="Self Employed">Self Employed</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">{{ t.educationLabel }} *</label>
+                  <select v-model="regForm.education_level" class="form-control" required>
+                    <option value="10th Pass">10th Standard or lower</option>
+                    <option value="12th Pass">12th Standard</option>
+                    <option value="Undergraduate">Undergraduate Degree</option>
+                    <option value="Graduate">Graduate / Master Degree</option>
+                    <option value="Post Graduate">Doctorate / Specialist</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group">
-                <label class="form-label">{{ t.districtLabel }} *</label>
-                <input 
-                  v-model="regForm.district" 
-                  type="text" 
-                  class="form-control" 
-                  placeholder="Pune" 
-                  required 
-                />
-              </div>
-            </div>
 
-            <div class="form-row">
               <div class="form-group">
-                <label class="form-label">{{ t.incomeLabel }} *</label>
-                <input 
-                  v-model="regForm.annual_income" 
-                  type="number" 
-                  class="form-control" 
-                  required 
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">{{ t.occupationLabel }} *</label>
-                <select v-model="regForm.occupation" class="form-control" required>
-                  <option value="Farmer">Farmer</option>
-                  <option value="Student">Student</option>
-                  <option value="Business Owner">Business Owner</option>
-                  <option value="Unemployed">Unemployed</option>
-                  <option value="Retired">Retired / Senior Citizen</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">{{ t.employeeTypeLabel }} *</label>
-                <select v-model="regForm.employee_type" class="form-control" required>
-                  <option value="Unemployed">Unemployed</option>
-                  <option value="Private Employee">Private Sector</option>
-                  <option value="Government Employee">Government Sector</option>
-                  <option value="Self Employed">Self Employed</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">{{ t.educationLabel }} *</label>
-                <select v-model="regForm.education_level" class="form-control" required>
-                  <option value="10th Pass">10th Standard or lower</option>
-                  <option value="12th Pass">12th Standard</option>
-                  <option value="Undergraduate">Undergraduate Degree</option>
-                  <option value="Graduate">Graduate / Master Degree</option>
-                  <option value="Post Graduate">Doctorate / Specialist</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">{{ t.disabilityLabel }}</label>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <input 
-                  type="checkbox" 
-                  id="regIsDisabled" 
-                  v-model="regForm.is_disabled" 
-                  style="width: 20px; height: 20px; cursor: pointer;"
-                />
-                <label for="regIsDisabled" style="cursor: pointer; font-size: 0.9rem;">Yes, I am differently-abled / Haan, mai divyang hu</label>
+                <label class="form-label">{{ t.disabilityLabel }}</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input 
+                    type="checkbox" 
+                    id="regIsDisabled" 
+                    v-model="regForm.is_disabled" 
+                    style="width: 20px; height: 20px; cursor: pointer;"
+                  />
+                  <label for="regIsDisabled" style="cursor: pointer; font-size: 0.9rem;">Yes, I am differently-abled / Haan, mai divyang hu</label>
+                </div>
               </div>
             </div>
 
