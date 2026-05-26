@@ -29,5 +29,6 @@ const emit = defineEmits(['startCheck']);
 .btn-hero-cta {
   padding: 14px 32px;
   font-size: 1.05rem;
+  max-width: 100%;
 }
 </style>

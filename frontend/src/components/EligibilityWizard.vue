@@ -179,11 +179,14 @@ const emit = defineEmits(['update:step', 'submit']);
 /* Beautiful custom checkbox alignment rules */
 .checkbox-align-wrapper {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  height: 48px;
+  min-height: 48px;
+  height: auto;
   align-self: end;
   margin-bottom: 20px;
+  min-width: 0;
+  padding-top: 14px;
 }
 
 .checkbox-control {
@@ -197,10 +200,12 @@ const emit = defineEmits(['update:step', 'submit']);
 .checkbox-label {
   cursor: pointer;
   user-select: none;
+  min-width: 0;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--clr-text-main);
-  line-height: 1.2;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 .mb-0 { margin-bottom: 0; }
 </style>

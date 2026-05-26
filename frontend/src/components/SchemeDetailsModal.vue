@@ -175,7 +175,7 @@ function getCategoryName(scheme) {
 .accordion-enter-active,
 .accordion-leave-active {
   transition: max-height 0.3s ease-out, opacity 0.2s ease;
-  max-height: 200px;
+  max-height: 600px;
   overflow: hidden;
 }
 .accordion-enter-from,
@@ -185,8 +185,10 @@ function getCategoryName(scheme) {
 }
 
 .doc-text {
-  flex-grow: 1;
+  flex: 1 1 140px;
+  min-width: 0;
   word-break: break-word;
+  overflow-wrap: anywhere;
   padding-right: 8px;
 }
 </style>

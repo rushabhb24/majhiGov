@@ -58,7 +58,7 @@ const t = computed(() => {
       retry: 'Retry Connection',
       benefitsLabel: 'Benefits',
       lastDateLabel: 'Last Application Date',
-      viewDetails: 'Fayde aur Documents Dekhein',
+      viewDetails: 'Benefits and Documents',
       applyLink: 'Official Apply Link',
       personalProfile: '1. Personal Profile / Vyakti Gata Jankari',
       incomeOccupation: '2. Income & Occupation / Kamai aur Kaam',
