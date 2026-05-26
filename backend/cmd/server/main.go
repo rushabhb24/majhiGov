@@ -31,6 +31,9 @@ func main() {
 	http.HandleFunc("/api/auth/register", handlers.RegisterHandler)
 	http.HandleFunc("/api/auth/login", handlers.LoginHandler)
 	http.HandleFunc("/api/user/profile", handlers.GetUserProfileHandler)
+	http.HandleFunc("/api/user/saved", handlers.SavedSchemesHandler)
+	http.HandleFunc("/api/user/apply", handlers.ApplySchemeHandler)
+	http.HandleFunc("/api/user/applications", handlers.GetUserApplicationsHandler)
 
 	// Fetch PORT from environment
 	port := os.Getenv("PORT")

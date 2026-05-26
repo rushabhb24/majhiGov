@@ -28,7 +28,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close', 'toggleBookmark', 'loginRequired']);
+const emit = defineEmits(['close', 'toggleBookmark', 'loginRequired', 'applyClick']);
 
 const activeFaqIndex = ref(null);
 
@@ -149,15 +149,13 @@ function getCategoryName(scheme) {
           <button class="btn btn-secondary" @click="emit('toggleBookmark', scheme.id)">
             {{ savedSchemeIds.includes(scheme.id) ? t.removeSavedBtn : t.saveSchemeBtn }}
           </button>
-          <a 
+          <button 
             v-if="isLoggedIn"
-            :href="scheme.apply_link" 
-            target="_blank" 
             class="btn btn-primary text-center" 
-            rel="noopener noreferrer"
+            @click="emit('applyClick', scheme)"
           >
-            {{ t.directApplyBtn }}
-          </a>
+            {{ t.submitAppBtn || 'Apply Online' }}
+          </button>
           <button 
             v-else 
             class="btn btn-primary text-center"

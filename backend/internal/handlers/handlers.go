@@ -682,3 +682,276 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		"profile": profile,
 	})
 }
+
+// parseUserIDFromToken extracts and parses the JWT token from the request header
+func parseUserIDFromToken(r *http.Request) (int, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		return 0, fmt.Errorf("missing or invalid authorization header")
+	}
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "super-secure-32-char-jwt-secret-key-majhigov"
+	}
+
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		return 0, fmt.Errorf("invalid or expired session token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, fmt.Errorf("invalid token format claims")
+	}
+
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("missing user session identification in token")
+	}
+	return int(userIDFloat), nil
+}
+
+// ToggleSavedSchemeHandler toggles the bookmark status of a scheme in PostgreSQL
+func ToggleSavedSchemeHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := parseUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		SchemeID int `json:"scheme_id"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil || req.SchemeID == 0 {
+		http.Error(w, "Invalid scheme ID payload", http.StatusBadRequest)
+		return
+	}
+
+	// Check if already saved
+	var exists bool
+	queryCheck := "SELECT EXISTS(SELECT 1 FROM user_saved_schemes WHERE user_id = $1 AND scheme_id = $2)"
+	err = db.DB.QueryRow(queryCheck, userID, req.SchemeID).Scan(&exists)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var saved bool
+	if exists {
+		// Delete bookmark
+		queryDel := "DELETE FROM user_saved_schemes WHERE user_id = $1 AND scheme_id = $2"
+		_, err = db.DB.Exec(queryDel, userID, req.SchemeID)
+		if err != nil {
+			http.Error(w, "Failed to remove bookmark: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		saved = false
+	} else {
+		// Insert bookmark
+		queryIns := "INSERT INTO user_saved_schemes (user_id, scheme_id, saved_at) VALUES ($1, $2, NOW())"
+		_, err = db.DB.Exec(queryIns, userID, req.SchemeID)
+		if err != nil {
+			http.Error(w, "Failed to save bookmark: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		saved = true
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"saved":   saved,
+		"message": "Bookmark synced successfully!",
+	})
+}
+
+// GetSavedSchemesHandler retrieves all scheme IDs saved by the authenticated user
+func GetSavedSchemesHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := parseUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	rows, err := db.DB.Query("SELECT scheme_id FROM user_saved_schemes WHERE user_id = $1", userID)
+	if err != nil {
+		http.Error(w, "Failed to query database: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var schemeIDs []int = []int{}
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			http.Error(w, "Error scanning database: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		schemeIDs = append(schemeIDs, id)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(schemeIDs)
+}
+
+// ApplySchemeHandler submits a new application to the database
+func ApplySchemeHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := parseUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		SchemeID int    `json:"scheme_id"`
+		Notes    string `json:"notes"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil || req.SchemeID == 0 {
+		http.Error(w, "Invalid application payload", http.StatusBadRequest)
+		return
+	}
+
+	// Prevent double application if a pending one already exists
+	var exists bool
+	queryCheck := "SELECT EXISTS(SELECT 1 FROM user_applied_schemes WHERE user_id = $1 AND scheme_id = $2 AND status = 'pending')"
+	err = db.DB.QueryRow(queryCheck, userID, req.SchemeID).Scan(&exists)
+	if err != nil {
+		http.Error(w, "Database verification error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if exists {
+		http.Error(w, "You already have a pending application under review for this scheme.", http.StatusBadRequest)
+		return
+	}
+
+	// Insert Application
+	queryApply := `
+		INSERT INTO user_applied_schemes (user_id, scheme_id, status, applied_at, notes, updated_at)
+		VALUES ($1, $2, 'pending', NOW(), $3, NOW())`
+	_, err = db.DB.Exec(queryApply, userID, req.SchemeID, req.Notes)
+	if err != nil {
+		http.Error(w, "Failed to submit application: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Your application has been submitted successfully!",
+	})
+}
+
+// GetUserApplicationsHandler retrieves all applications along with scheme names and statuses
+func GetUserApplicationsHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := parseUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	query := `
+		SELECT a.id, a.scheme_id, s.title, s.title_hi, s.title_mr, s.government_level, a.status, a.applied_at, a.notes 
+		FROM user_applied_schemes a
+		JOIN schemes s ON a.scheme_id = s.id
+		WHERE a.user_id = $1
+		ORDER BY a.applied_at DESC`
+
+	rows, err := db.DB.Query(query, userID)
+	if err != nil {
+		http.Error(w, "Failed to query applications: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type ApplicationResponse struct {
+		ID              int       `json:"id"`
+		SchemeID        int       `json:"scheme_id"`
+		Title           string    `json:"title"`
+		TitleHi         string    `json:"title_hi"`
+		TitleMr         string    `json:"title_mr"`
+		GovernmentLevel string    `json:"government_level"`
+		Status          string    `json:"status"`
+		AppliedAt       time.Time `json:"applied_at"`
+		Notes           string    `json:"notes"`
+	}
+
+	var apps []ApplicationResponse = []ApplicationResponse{}
+	for rows.Next() {
+		var a ApplicationResponse
+		err := rows.Scan(&a.ID, &a.SchemeID, &a.Title, &a.TitleHi, &a.TitleMr, &a.GovernmentLevel, &a.Status, &a.AppliedAt, &a.Notes)
+		if err != nil {
+			http.Error(w, "Error scanning database rows: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		apps = append(apps, a)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(apps)
+}
+
+// SavedSchemesHandler routes GET and POST requests for user bookmarks
+func SavedSchemesHandler(w http.ResponseWriter, r *http.Request) {
+	EnableCors(&w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method == "GET" {
+		GetSavedSchemesHandler(w, r)
+	} else if r.Method == "POST" {
+		ToggleSavedSchemeHandler(w, r)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}

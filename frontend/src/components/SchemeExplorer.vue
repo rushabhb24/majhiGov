@@ -55,7 +55,8 @@ const emit = defineEmits([
   'toggleBookmark',
   'openDetails',
   'retry',
-  'loginRequired'
+  'loginRequired',
+  'applyClick'
 ]);
 
 function getCategoryName(categoryName) {
@@ -154,6 +155,7 @@ function getCategoryName(categoryName) {
         @toggle-bookmark="emit('toggleBookmark', $event)"
         @open-details="emit('openDetails', $event)"
         @login-required="emit('loginRequired', $event)"
+        @apply-click="emit('applyClick', $event)"
       />
     </div>
   </div>

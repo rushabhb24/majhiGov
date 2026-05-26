@@ -59,6 +59,13 @@ const loginForm = ref({
 // Saved Bookmarks state
 const savedSchemeIds = ref([]);
 
+// Setup reactive states for Phase 5 Applications & Bookmarks DB sync
+const applications = ref([]);
+const applyModalOpen = ref(false);
+const applyNotes = ref('');
+const applyingScheme = ref(null);
+const applySubmitting = ref(false);
+
 // Selected Relational Scheme state for modal
 const selectedScheme = ref(null);
 const detailModalOpen = ref(false);
@@ -153,7 +160,22 @@ const t = computed(() => {
       regSuccessToast: 'Registration successful! You can now log in.',
       authErrorToast: 'Authentication failed. Please check your inputs.',
       loginToApply: 'Login to Apply',
-      loginRequiredToast: 'Please login to use this feature!'
+      loginRequiredToast: 'Please login to use this feature!',
+      myApplications: 'My Applications',
+      applicationTimeline: 'Your Application Tracking Timeline',
+      applyFormTitle: 'Submit Government Application Form',
+      requiredDocumentsInfo: 'Review required documents before submitting your request. Make sure you possess all mandatory credentials.',
+      notesLabel: 'Demographic Notes & Supporting Statement',
+      notesPlaceholder: 'Enter any additional notes or details to support your application...',
+      submitAppBtn: 'Submit Application Now',
+      submittingApp: 'Submitting application...',
+      toastApplied: 'Application submitted successfully!',
+      alreadyAppliedToast: 'You already have an active pending application for this scheme.',
+      noApplications: 'No applications submitted yet. Find a scheme and apply!',
+      statusPending: 'Under Review (Pending)',
+      statusApproved: 'Benefits Disbursed (Approved)',
+      statusRejected: 'Clarification Required (Rejected)',
+      notesTitle: 'Citizen Statement:'
     },
     hi: {
       explorer: 'योजना खोजें',
@@ -239,7 +261,22 @@ const t = computed(() => {
       regSuccessToast: 'पंजीकरण सफल! अब आप लॉगिन कर सकते हैं।',
       authErrorToast: 'प्रमाणीकरण विफल। कृपया इनपुट की जांच करें।',
       loginToApply: 'आवेदन के लिए लॉगिन करें',
-      loginRequiredToast: 'कृपया इस सुविधा का उपयोग करने के लिए पहले लॉगिन करें!'
+      loginRequiredToast: 'कृपया इस सुविधा का उपयोग करने के लिए पहले लॉगिन करें!',
+      myApplications: 'मेरे आवेदन',
+      applicationTimeline: 'आपके आवेदन ट्रैकिंग समयरेखा (Timeline)',
+      applyFormTitle: 'सरकारी आवेदन पत्र जमा करें',
+      requiredDocumentsInfo: 'जमा करने से पहले आवश्यक दस्तावेजों की समीक्षा करें। सुनिश्चित करें कि आपके पास सभी आवश्यक कागजात हैं।',
+      notesLabel: 'जनसांख्यिकीय विवरण और सहायक विवरण',
+      notesPlaceholder: 'अपने आवेदन के समर्थन में कोई अतिरिक्त विवरण दर्ज करें...',
+      submitAppBtn: 'अभी आवेदन जमा करें',
+      submittingApp: 'आवेदन जमा किया जा रहा है...',
+      toastApplied: 'आवेदन सफलतापूर्वक जमा किया गया!',
+      alreadyAppliedToast: 'इस योजना के लिए आपका एक सक्रिय आवेदन पहले से ही प्रक्रिया में है।',
+      noApplications: 'अभी तक कोई आवेदन जमा नहीं किया गया है। योजना खोजें और आवेदन करें!',
+      statusPending: 'समीक्षा के अधीन (लंबित)',
+      statusApproved: 'लाभ वितरित (स्वीकृत)',
+      statusRejected: 'स्पष्टीकरण आवश्यक (अस्वीकृत)',
+      notesTitle: 'नागरिक का विवरण:'
     },
     mr: {
       explorer: 'योजना शोधा',
@@ -325,7 +362,22 @@ const t = computed(() => {
       regSuccessToast: 'नोंदणी यशस्वी! आता तुम्ही लॉगिन करू शकता.',
       authErrorToast: 'प्रमाणीकरण अयशस्वी. कृपया प्रविष्ट केलेली माहिती तपासा.',
       loginToApply: 'अर्ज करण्यासाठी लॉगिन करा',
-      loginRequiredToast: 'कृपया या वैशिष्ट्याचा वापर करण्यासाठी आधी लॉगिन करा!'
+      loginRequiredToast: 'कृपया या वैशिष्ट्याचा वापर करण्यासाठी आधी लॉगिन करा!',
+      myApplications: 'माझे अर्ज',
+      applicationTimeline: 'तुमचा अर्ज मागोवा घेणारी टाइमलाईन',
+      applyFormTitle: 'शासकीय अर्ज सादर करा',
+      requiredDocumentsInfo: 'सादर करण्यापूर्वी आवश्यक कागदपत्रांचे पुनरावलोकन करा. आपल्याकडे सर्व आवश्यक कागदपत्रे असल्याची खात्री करा.',
+      notesLabel: 'लोकसंख्याशास्त्रीय तपशील आणि सहाय्यक विधान',
+      notesPlaceholder: 'तुमच्या अर्जाला पाठबळ देण्यासाठी अतिरिक्त माहिती प्रविष्ट करा...',
+      submitAppBtn: 'आता अर्ज सादर करा',
+      submittingApp: 'अर्ज सादर केला जात आहे...',
+      toastApplied: 'अर्ज यशस्वीरित्या सादर केला गेला!',
+      alreadyAppliedToast: 'या योजनेसाठी तुमचा एक अर्ज आधीच प्रलंबित आहे.',
+      noApplications: 'अद्याप एकही अर्ज सादर केलेला नाही. योजना शोधा आणि अर्ज करा!',
+      statusPending: 'पुनरावलोकनाधीन (प्रलंबित)',
+      statusApproved: 'लाभ वितरित (मंजूर)',
+      statusRejected: 'स्पष्टीकरण आवश्यक (नाकारला)',
+      notesTitle: 'नागरिकांचे विधान:'
     }
   };
   return dictionary[currentLanguage.value];
@@ -438,6 +490,10 @@ async function loginUser() {
       // Auto-prefilling logic
       prefillEligibilityFromProfile(data.profile);
 
+      // Sync and load dynamic data from database
+      await fetchSavedSchemes();
+      await fetchApplications();
+
       showToast(t.value.loginSuccessToast, 'success');
       authModalOpen.value = false;
       // Reset form
@@ -502,6 +558,9 @@ async function fetchUserProfile() {
       userProfile.value = data.profile;
       // Prefill eligibility automatically
       prefillEligibilityFromProfile(data.profile);
+      // Fetch relational bookmarks and applications
+      fetchSavedSchemes();
+      fetchApplications();
     }
   } catch (err) {
     console.error('Session restoration failed:', err);
@@ -513,7 +572,10 @@ async function fetchUserProfile() {
 function logoutUser() {
   token.value = null;
   userProfile.value = null;
+  savedSchemeIds.value = [];
+  applications.value = [];
   localStorage.removeItem('yojana_auth_token');
+  localStorage.removeItem('yojana_saved_ids');
   showToast(t.value.logout || 'Logged out successfully', 'info');
 }
 
@@ -559,25 +621,143 @@ function handleTabChange(newTab) {
     showToast(t.value.loginRequiredToast || 'Please login to use this feature!', 'info');
   } else {
     activeTab.value = newTab;
+    if (newTab === 'applications') {
+      fetchApplications();
+    }
   }
 }
 
-function toggleBookmark(schemeId) {
+async function fetchSavedSchemes() {
+  if (!token.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user/saved`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        savedSchemeIds.value = data;
+        localStorage.setItem('yojana_saved_ids', JSON.stringify(data));
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch bookmarks from server:', err);
+  }
+}
+
+async function toggleBookmark(schemeId) {
   if (!token.value) {
     authTab.value = 'login';
     authModalOpen.value = true;
     showToast(t.value.loginRequiredToast || 'Please login to save schemes!', 'info');
     return;
   }
-  const index = savedSchemeIds.value.indexOf(schemeId);
-  if (index === -1) {
-    savedSchemeIds.value.push(schemeId);
-    showToast(t.value.toastSaved, 'success');
-  } else {
-    savedSchemeIds.value.splice(index, 1);
-    showToast(t.value.toastRemoved, 'info');
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user/saved`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.value}`
+      },
+      body: JSON.stringify({ scheme_id: Number(schemeId) })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to toggle bookmark on server');
+    }
+    
+    const index = savedSchemeIds.value.indexOf(schemeId);
+    if (index === -1) {
+      savedSchemeIds.value.push(schemeId);
+      showToast(t.value.toastSaved, 'success');
+    } else {
+      savedSchemeIds.value.splice(index, 1);
+      showToast(t.value.toastRemoved, 'info');
+    }
+    localStorage.setItem('yojana_saved_ids', JSON.stringify(savedSchemeIds.value));
+  } catch (err) {
+    console.error('Error toggling bookmark:', err);
+    showToast('Failed to sync bookmark with account.', 'danger');
   }
-  localStorage.setItem('yojana_saved_ids', JSON.stringify(savedSchemeIds.value));
+}
+
+async function fetchApplications() {
+  if (!token.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/user/applications`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      applications.value = data || [];
+    }
+  } catch (err) {
+    console.error('Failed to fetch user applications:', err);
+  }
+}
+
+function handleApplyAction(scheme) {
+  if (!token.value) {
+    authTab.value = 'login';
+    authModalOpen.value = true;
+    showToast(t.value.loginRequiredToast || 'Please login to apply!', 'info');
+    return;
+  }
+  applyingScheme.value = scheme;
+  applyNotes.value = '';
+  applyModalOpen.value = true;
+}
+
+async function submitApplication() {
+  if (!token.value || !applyingScheme.value) return;
+  applySubmitting.value = true;
+  try {
+    const payload = {
+      scheme_id: Number(applyingScheme.value.id),
+      notes: applyNotes.value
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/user/apply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.value}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.status === 409) {
+      showToast(t.value.alreadyAppliedToast || 'You already have an active pending application for this scheme.', 'warning');
+      applyModalOpen.value = false;
+      applyingScheme.value = null;
+      return;
+    }
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Failed to submit application');
+    }
+
+    showToast(t.value.toastApplied || 'Application submitted successfully!', 'success');
+    applyModalOpen.value = false;
+    applyingScheme.value = null;
+    
+    // Automatically switch to My Applications tab to view timeline
+    activeTab.value = 'applications';
+    fetchApplications();
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || 'Error submitting application.', 'danger');
+  } finally {
+    applySubmitting.value = false;
+  }
 }
 
 const bookmarkedSchemes = computed(() => {
@@ -652,6 +832,8 @@ onMounted(() => {
   loadBookmarks();
   if (token.value) {
     fetchUserProfile();
+    fetchSavedSchemes();
+    fetchApplications();
   }
 });
 </script>
@@ -696,6 +878,7 @@ onMounted(() => {
         @open-details="openDetails"
         @retry="fetchSchemes"
         @login-required="authModalOpen = true; authTab = 'login'"
+        @apply-click="handleApplyAction"
       />
 
       <!-- TAB VIEW 2: SMART ELIGIBILITY CHECKER -->
@@ -747,7 +930,59 @@ onMounted(() => {
             @toggle-bookmark="toggleBookmark"
             @open-details="openDetails"
             @login-required="authModalOpen = true; authTab = 'login'"
+            @apply-click="handleApplyAction"
           />
+        </div>
+      </div>
+
+      <!-- TAB VIEW 4: CITIZEN APPLICATIONS TIMELINE -->
+      <div v-else-if="activeTab === 'applications'" class="tab-content animate-fade">
+        <div class="card filter-panel">
+          <h2 class="section-title">{{ t.myApplications }}</h2>
+          <p class="text-muted">{{ t.applicationTimeline }}</p>
+        </div>
+
+        <div v-if="applications.length === 0" class="empty-state text-center mt-4 card">
+          <div class="empty-bookmarks-art">📬</div>
+          <h3>{{ t.noApplications }}</h3>
+          <button class="btn btn-primary mt-4" @click="activeTab = 'explorer'">Explore Schemes</button>
+        </div>
+
+        <!-- Dynamic Relational Tracking Timeline -->
+        <div v-else class="timeline-container">
+          <div 
+            v-for="app in applications" 
+            :key="app.id" 
+            class="timeline-card"
+          >
+            <div class="timeline-header">
+              <h3 class="timeline-title">
+                {{ currentLanguage === 'mr' ? (app.title_mr || app.title) : (currentLanguage === 'hi' ? (app.title_hi || app.title) : app.title) }}
+              </h3>
+              
+              <!-- Localized, Glow-Tinted status badges -->
+              <span 
+                class="badge" 
+                :class="{
+                  'badge-warning': app.status === 'pending',
+                  'badge-success': app.status === 'approved',
+                  'badge-danger': app.status === 'rejected'
+                }"
+                style="padding: 6px 12px; border-radius: var(--border-radius-full); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;"
+              >
+                {{ app.status === 'pending' ? t.statusPending : (app.status === 'approved' ? t.statusApproved : t.statusRejected) }}
+              </span>
+            </div>
+            
+            <div class="timeline-date">
+              📅 Applied on: {{ new Date(app.applied_at).toLocaleDateString(currentLanguage === 'en' ? 'en-US' : (currentLanguage === 'hi' ? 'hi-IN' : 'mr-IN'), { year: 'numeric', month: 'long', day: 'numeric' }) }}
+            </div>
+            
+            <!-- Citizen Supporting statement details -->
+            <div v-if="app.notes" class="timeline-notes">
+              <strong>{{ t.notesTitle }}</strong> {{ app.notes }}
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -763,7 +998,70 @@ onMounted(() => {
       @close="closeDetails"
       @toggle-bookmark="toggleBookmark"
       @login-required="authModalOpen = true; authTab = 'login'"
+      @apply-click="(s) => { closeDetails(); handleApplyAction(s); }"
     />
+
+    <!-- Beautiful Glassmorphic Application Form Modal -->
+    <Transition name="modal-fade">
+      <div v-if="applyModalOpen && applyingScheme" class="modal-overlay" @click.self="applyModalOpen = false">
+        <div class="modal-content card" style="max-width: 600px; width: 100%;">
+          <button class="btn-close-modal" @click="applyModalOpen = false" title="Close Modal">×</button>
+          
+          <h2 class="modal-title">{{ t.applyFormTitle }}</h2>
+          <h4 class="mt-2 text-muted" style="font-family: var(--font-heading); font-weight: 600; color: var(--clr-primary);">
+            {{ currentLanguage === 'mr' ? (applyingScheme.title_mr || applyingScheme.title) : (currentLanguage === 'hi' ? (applyingScheme.title_hi || applyingScheme.title) : applyingScheme.title) }}
+          </h4>
+          
+          <hr class="divider mt-4" />
+          
+          <div class="modal-scroll-area">
+            <p class="text-muted mt-2" style="font-size: 0.9rem; line-height: 1.5;">
+              {{ t.requiredDocumentsInfo }}
+            </p>
+            
+            <!-- Mandatory Documents checklist for verification -->
+            <div class="docs-checklist mt-4" style="background: var(--clr-surface-alt); padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--clr-border);">
+              <h5 style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">📋 {{ t.modalDocs }}</h5>
+              <div v-for="doc in applyingScheme.documents" :key="doc.id" style="display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; font-size: 0.88rem;">
+                <span>🟢</span>
+                <div>
+                  <strong style="color: var(--clr-text-main);">{{ currentLanguage === 'mr' ? doc.document_name_mr : (currentLanguage === 'hi' ? doc.document_name_hi : doc.document_name) }}</strong>
+                  <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;" :style="doc.is_mandatory ? 'background: rgba(239, 68, 68, 0.15); color: var(--clr-danger);' : 'background: rgba(16, 185, 129, 0.15); color: var(--clr-success);'">
+                    {{ doc.is_mandatory ? t.mandatoryBadge : t.optionalBadge }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Notes Input Form -->
+            <div class="form-group mt-4">
+              <label class="form-label" for="apply-notes-input" style="font-weight: 600;">{{ t.notesLabel }}</label>
+              <textarea 
+                id="apply-notes-input" 
+                v-model="applyNotes" 
+                class="form-control" 
+                rows="4" 
+                :placeholder="t.notesPlaceholder" 
+                style="resize: vertical; font-family: var(--font-body); padding: 12px; margin-top: 6px;"
+              ></textarea>
+            </div>
+          </div>
+          
+          <div class="modal-footer mt-4">
+            <button class="btn btn-secondary" @click="applyModalOpen = false">
+              {{ t.back }}
+            </button>
+            <button 
+              class="btn btn-primary" 
+              @click="submitApplication"
+              :disabled="applySubmitting"
+            >
+              {{ applySubmitting ? t.submittingApp : t.submitAppBtn }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Frosted Notification banner alerts -->
     <ToastBanner 
