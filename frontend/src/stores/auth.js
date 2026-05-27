@@ -1,0 +1,247 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { API_BASE_URL } from '../config.js'
+
+export const useAuthStore = defineStore('auth', () => {
+  // State
+  const token = ref(localStorage.getItem('yojana_auth_token') || null)
+  const userProfile = ref(null)
+  const authModalOpen = ref(false)
+  const authTab = ref('login')
+  const regForm = ref({
+    email: '',
+    phone: '',
+    password: '',
+    full_name: '',
+    date_of_birth: '1995-01-01',
+    gender: 'Male',
+    state: 'Maharashtra',
+    district: 'Pune',
+    caste_category: 'General',
+    annual_income: 150000,
+    occupation: 'Unemployed',
+    employee_type: 'Unemployed',
+    education_level: 'Graduate',
+    is_disabled: false
+  })
+  const loginForm = ref({ email: '', password: '' })
+  const authSubmitting = ref(false)
+
+  // Getters
+  const isLoggedIn = computed(() => !!token.value)
+
+  // Actions
+  async function registerUser() {
+    const { useUiStore } = await import('./ui.js')
+    const uiStore = useUiStore()
+
+    authSubmitting.value = true
+    try {
+      const payload = {
+        email: regForm.value.email,
+        phone: regForm.value.phone,
+        password: regForm.value.password,
+        full_name: regForm.value.full_name,
+        date_of_birth: regForm.value.date_of_birth,
+        gender: regForm.value.gender,
+        state: regForm.value.state,
+        district: regForm.value.district,
+        caste_category: regForm.value.caste_category,
+        annual_income: Number(regForm.value.annual_income),
+        occupation: regForm.value.occupation,
+        employee_type: regForm.value.employee_type,
+        education_level: regForm.value.education_level,
+        is_disabled: regForm.value.is_disabled
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(errText || 'Registration failed')
+      }
+
+      uiStore.showToast('Registration successful! You can now log in.', 'success')
+      authTab.value = 'login'
+      loginForm.value.email = regForm.value.email
+    } catch (err) {
+      console.error(err)
+      uiStore.showToast(err.message || 'Authentication failed.', 'danger')
+    } finally {
+      authSubmitting.value = false
+    }
+  }
+
+  async function loginUser() {
+    const { useUiStore } = await import('./ui.js')
+    const uiStore = useUiStore()
+
+    authSubmitting.value = true
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginForm.value)
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(errText || 'Invalid credentials')
+      }
+
+      const data = await response.json()
+      if (data.success && data.token) {
+        token.value = data.token
+        userProfile.value = data.profile
+        localStorage.setItem('yojana_auth_token', data.token)
+
+        // Prefill eligibility from profile
+        const { useEligibilityStore } = await import('./eligibility.js')
+        const eligibilityStore = useEligibilityStore()
+        eligibilityStore.prefillFromProfile(data.profile)
+
+        // Sync bookmarks and applications
+        const { useBookmarkStore } = await import('./bookmarks.js')
+        const bookmarkStore = useBookmarkStore()
+        await bookmarkStore.fetchSavedSchemes()
+
+        const { useApplicationStore } = await import('./applications.js')
+        const applicationStore = useApplicationStore()
+        await applicationStore.fetchApplications()
+
+        uiStore.showToast('Welcome back! Logged in successfully.', 'success')
+        authModalOpen.value = false
+        loginForm.value.password = ''
+      } else {
+        throw new Error('Authentication response was invalid')
+      }
+    } catch (err) {
+      console.error(err)
+      uiStore.showToast(err.message || 'Authentication failed.', 'danger')
+    } finally {
+      authSubmitting.value = false
+    }
+  }
+
+  async function fetchUserProfile() {
+    if (!token.value) return
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token.value}` }
+      })
+
+      if (response.status === 401) {
+        logoutUser()
+        return
+      }
+
+      if (!response.ok) throw new Error('Failed to fetch user profile')
+
+      const data = await response.json()
+      if (data.success && data.profile) {
+        userProfile.value = data.profile
+
+        // Prefill eligibility
+        const { useEligibilityStore } = await import('./eligibility.js')
+        const eligibilityStore = useEligibilityStore()
+        eligibilityStore.prefillFromProfile(data.profile)
+
+        // Fetch bookmarks and applications
+        const { useBookmarkStore } = await import('./bookmarks.js')
+        const bookmarkStore = useBookmarkStore()
+        bookmarkStore.fetchSavedSchemes()
+
+        const { useApplicationStore } = await import('./applications.js')
+        const applicationStore = useApplicationStore()
+        applicationStore.fetchApplications()
+      }
+    } catch (err) {
+      console.error('Session restoration failed:', err)
+      token.value = null
+      localStorage.removeItem('yojana_auth_token')
+    }
+  }
+
+  async function updateProfile(data) {
+    const { useUiStore } = await import('./ui.js')
+    const uiStore = useUiStore()
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token.value}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(errText || 'Failed to update profile')
+      }
+
+      const result = await response.json()
+      if (result.success && result.profile) {
+        userProfile.value = result.profile
+        uiStore.showToast('Profile updated successfully!', 'success')
+
+        // Re-prefill eligibility with updated profile
+        const { useEligibilityStore } = await import('./eligibility.js')
+        const eligibilityStore = useEligibilityStore()
+        eligibilityStore.prefillFromProfile(result.profile)
+      }
+    } catch (err) {
+      console.error(err)
+      uiStore.showToast(err.message || 'Failed to update profile', 'danger')
+      throw err
+    }
+  }
+
+  function logoutUser() {
+    token.value = null
+    userProfile.value = null
+    localStorage.removeItem('yojana_auth_token')
+    localStorage.removeItem('yojana_saved_ids')
+
+    // Clear dependent stores (import dynamically)
+    import('./bookmarks.js').then(({ useBookmarkStore }) => {
+      try { useBookmarkStore().clearBookmarks() } catch (e) { /* ok */ }
+    })
+    import('./applications.js').then(({ useApplicationStore }) => {
+      try { useApplicationStore().clearApplications() } catch (e) { /* ok */ }
+    })
+  }
+
+  function openAuthModal(tab = 'login') {
+    authModalOpen.value = true
+    authTab.value = tab
+  }
+
+  function closeAuthModal() {
+    authModalOpen.value = false
+  }
+
+  return {
+    token,
+    userProfile,
+    authModalOpen,
+    authTab,
+    regForm,
+    loginForm,
+    authSubmitting,
+    isLoggedIn,
+    registerUser,
+    loginUser,
+    fetchUserProfile,
+    updateProfile,
+    logoutUser,
+    openAuthModal,
+    closeAuthModal
+  }
+})

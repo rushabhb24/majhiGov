@@ -226,6 +226,18 @@ a:hover {
   margin-top: 16px;
 }
 
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mb-0 {
+  margin-bottom: 0;
+}
+
+.mr-4 {
+  margin-right: 16px;
+}
+
 .flex-grow {
   flex: 1 1 0;
   min-width: 0;
@@ -341,12 +353,12 @@ select.form-control {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: nowrap;
-  padding: 16px 24px;
+  flex-wrap: wrap;
+  padding: 14px 24px;
   width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -379,15 +391,16 @@ select.form-control {
 
 .nav-menu {
   display: flex;
-  flex: 0 1 auto;
-  gap: 6px;
-  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  gap: 4px;
+  flex-wrap: wrap;
   background: var(--clr-surface-alt);
   padding: 4px;
   border-radius: var(--border-radius-full);
   border: 1px solid var(--clr-border);
   justify-content: center;
   min-width: 0;
+  overflow: hidden;
 }
 
 .nav-link {
@@ -398,7 +411,7 @@ select.form-control {
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--clr-text-muted);
-  padding: 8px 3px;
+  padding: 8px 14px;
   border-radius: var(--border-radius-full);
   transition: all var(--transition-normal);
   cursor: pointer;
@@ -1434,9 +1447,10 @@ select.form-control {
   font-size: 1.1rem;
 }
 
+/* Tablet — nav wraps to second row */
 @media (max-width: 980px) {
   .header-container {
-    justify-content: center;
+    justify-content: space-between;
   }
 
   .logo {
@@ -1450,79 +1464,39 @@ select.form-control {
   .nav-menu {
     order: 3;
     flex-basis: 100%;
+    border-radius: var(--border-radius-md);
+  }
+
+  .nav-link {
+    padding: 8px 12px;
+    font-size: 0.82rem;
   }
 }
 
-/* Mobile responsive fixes */
+/* Mobile responsive — hamburger handles nav, no bottom bar */
 @media (max-width: 768px) {
   .main-container {
     padding: 0 16px;
+    margin-top: 16px;
+    margin-bottom: 24px;
   }
 
   .hero {
-    padding: 40px 18px;
+    padding: 36px 18px;
+    margin-bottom: 24px;
   }
 
   .hero h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
     letter-spacing: 0;
   }
 
   .hero p {
-    font-size: 1rem;
-  }
-
-  .nav-menu {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--clr-surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: space-around;
-    align-items: stretch;
-    flex-wrap: nowrap;
-    gap: 6px;
-    padding: 8px;
-    z-index: 1000;
-    border-top: 1px solid var(--clr-border);
-    border-radius: 0;
-  }
-
-  .nav-link {
-    flex: 1 1 0;
-    font-size: 0.8rem;
-    min-width: 0;
-    padding: 6px 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    border-radius: var(--border-radius-md);
-  }
-
-  .nav-link>span:first-of-type {
-    display: block;
-    max-width: 100%;
-    line-height: 1.15;
-  }
-
-  .nav-link svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .main-container {
-    margin-top: 16px;
-    margin-bottom: 80px;
+    font-size: 0.95rem;
   }
 
   .header-container {
-    padding: 12px 16px;
+    padding: 10px 16px;
   }
 
   .logo-icon {
@@ -1536,11 +1510,12 @@ select.form-control {
 
   .schemes-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .scheme-card {
     height: auto;
-    /* Allow auto heights in full grid lists on mobile */
+    min-height: auto;
   }
 
   .scheme-desc {
@@ -1557,43 +1532,122 @@ select.form-control {
     text-align: left;
   }
 
+  .modal-overlay {
+    padding: 12px;
+  }
+
   .modal-content {
-    padding: 24px 20px;
-    max-height: 95vh;
+    padding: 20px 16px;
+    max-height: 92vh;
+    max-width: 100% !important;
+    border-radius: var(--border-radius-md);
   }
 
   .modal-title {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
+  }
+
+  .modal-scroll-area {
+    max-height: 55vh;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
   }
 
   .toast-banner {
-    right: 16px;
-    bottom: 88px;
-    max-width: calc(100vw - 32px);
+    right: 12px;
+    left: 12px;
+    bottom: 16px;
+    max-width: 100%;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+  }
+
+  .filter-panel {
+    margin-bottom: 20px;
+  }
+
+  /* Timeline cards */
+  .timeline-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .timeline-card {
+    padding: 16px;
+  }
+
+  /* Auth modal scroll */
+  .auth-scroll-area {
+    max-height: 50vh;
+  }
+
+  /* Search row */
+  .search-filter-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-filter-row > .form-group,
+  .sort-field {
+    flex: 1 1 100%;
+  }
+
+  /* Profile page grid */
+  .profile-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px;
+  }
+
+  .profile-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-actions {
+    justify-content: stretch;
+  }
+
+  .profile-actions .btn {
+    flex: 1;
   }
 }
 
+/* Small phones */
 @media (max-width: 480px) {
   .card {
-    padding: 18px;
+    padding: 16px;
+    border-radius: var(--border-radius-sm);
   }
 
   .header-container {
-    gap: 10px;
+    gap: 8px;
+    padding: 8px 12px;
   }
 
   .select-lang {
-    max-width: 145px;
+    max-width: 80px;
+    font-size: 0.8rem !important;
+    padding: 6px 28px 6px 10px !important;
   }
 
   .btn-theme,
   .btn-toggle {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 
   .section-title {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
   }
 
   .scheme-footer,
@@ -1609,6 +1663,54 @@ select.form-control {
   .wizard-actions .btn {
     width: 100%;
     flex-basis: auto;
+  }
+
+  .hero {
+    padding: 28px 14px;
+    border-radius: var(--border-radius-md);
+  }
+
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero p {
+    font-size: 0.88rem;
+  }
+
+  .main-container {
+    padding: 0 10px;
+    margin-top: 12px;
+  }
+
+  .chip {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+
+  .form-control {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .profile-field {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .profile-card {
+    padding: 18px !important;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Profile edit form responsive */
+  .profile-edit-form .form-row {
+    grid-template-columns: 1fr;
   }
 }
 

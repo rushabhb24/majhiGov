@@ -11,7 +11,7 @@ export default {
   lightTheme: 'लाइट',
 
   // Hero
-  heroTitle: 'शासकीय योजना पोर्टल 🇮🇳',
+  heroTitle: 'शासकीय योजनांचे पोर्टल 🇮🇳',
   heroSubtitle: 'तुमच्या प्रोफाइलनुसार योग्य केंद्रीय व राज्य शासकीय योजना शोधा आणि पात्रता तपासा.',
   btnCheckElig: 'पात्रता तपासा',
 
@@ -51,14 +51,14 @@ export default {
   calculate: 'पात्रता तपासा!',
 
   // Eligibility Results
-  resultsTitle: 'निव्वळ / तुमची पात्रता',
+  resultsTitle: 'निकाल / तुमची पात्रता',
   eligibleTitle: 'पात्र योजना (यात अर्ज करा)',
   notEligibleTitle: 'अपात्र योजना',
   noEligible: 'तुमच्या सध्याच्या प्रोफाइलनुसार एकही पात्र योजना आढळली नाही.',
   reasonsLabel: 'तुम्ही का पात्र आहात:',
   notEligReasonsLabel: 'अपात्रतेची कारणे:',
-  noDetailsChecked: 'डाव्या बाजूला दिलेल्या फॉर्ममध्ये माहिती भरा आणि तपासा की कोणत्या योजनांसाठी तुम्ही पात्र आहात.',
-  notCheckedIntro: 'अद्याप तपासणी केलेली नाही',
+  noDetailsChecked: 'डाव्या बाजूला दिलेल्या फॉर्ममध्ये माहिती भरा आणि तुम्ही कोणत्या योजनांसाठी पात्र आहात ते तपासा.',
+  notCheckedIntro: 'अद्याप तपासणी केली नाही',
 
   // Saved Schemes
   savedTitle: 'तुमच्या जतन केलेल्या योजना',
@@ -90,5 +90,61 @@ export default {
   toastSaved: 'योजना यशस्वीरित्या जतन केली!',
   toastRemoved: 'योजना जतन सूचीतून काढली.',
   toastSuccess: 'पात्रतेची गणना यशस्वी झाली!',
-  toastFail: 'गो (Go) बॅकएंडशी संपर्क होऊ शकला नाही.'
+  toastFail: 'गो (Go) बॅकएंडशी संपर्क होऊ शकला नाही.',
+
+  // Auth
+  loginRegister: 'लॉगिन / नोंदणी',
+  logout: 'लॉगआऊट',
+  emailLabel: 'ईमेल पत्ता',
+  phoneLabel: 'फोन नंबर',
+  passwordLabel: 'पासवर्ड',
+  fullNameLabel: 'पूर्ण नाव',
+  dobLabel: 'जन्मतारीख (YYYY-MM-DD)',
+  districtLabel: 'जिल्हा',
+  submitting: 'प्रक्रिया सुरू आहे...',
+  profilePrefilledToast: 'खाते लॉगिन झाले आणि पात्रता प्रोफाइल भरली गेली!',
+  loginSuccessToast: 'पुन्हा स्वागत आहे! लॉगिन यशस्वी झाले.',
+  regSuccessToast: 'नोंदणी यशस्वी! आता तुम्ही लॉगिन करू शकता.',
+  authErrorToast: 'प्रमाणीकरण अयशस्वी. कृपया प्रविष्ट केलेली माहिती तपासा.',
+  loginToApply: 'अर्ज करण्यासाठी लॉगिन करा',
+  loginRequiredToast: 'कृपया या वैशिष्ट्याचा वापर करण्यासाठी आधी लॉगिन करा!',
+
+  // Applications
+  myApplications: 'माझे अर्ज',
+  applicationTimeline: 'तुमचा अर्ज मागोवा घेणारी टाइमलाईन',
+  applyFormTitle: 'शासकीय अर्ज सादर करा',
+  requiredDocumentsInfo: 'सादर करण्यापूर्वी आवश्यक कागदपत्रांचे पुनरावलोकन करा. आपल्याकडे सर्व आवश्यक कागदपत्रे असल्याची खात्री करा.',
+  notesLabel: 'लोकसंख्याशास्त्रीय तपशील आणि सहाय्यक विधान',
+  notesPlaceholder: 'तुमच्या अर्जाला पाठबळ देण्यासाठी अतिरिक्त माहिती प्रविष्ट करा...',
+  submitAppBtn: 'आता अर्ज सादर करा',
+  submittingApp: 'अर्ज सादर केला जात आहे...',
+  toastApplied: 'अर्ज यशस्वीरित्या सादर केला गेला!',
+  alreadyAppliedToast: 'या योजनेसाठी तुमचा एक अर्ज आधीच प्रलंबित आहे.',
+  noApplications: 'अद्याप एकही अर्ज सादर केलेला नाही. योजना शोधा आणि अर्ज करा!',
+  statusPending: 'पुनरावलोकनाधीन (प्रलंबित)',
+  statusApproved: 'लाभ वितरित (मंजूर)',
+  statusRejected: 'स्पष्टीकरण आवश्यक (नाकारला)',
+  notesTitle: 'नागरिकांचे विधान:',
+
+  // Profile Management
+  myProfile: 'माझे प्रोफाइल',
+  editProfile: 'प्रोफाइल संपादित करा',
+  saveProfile: 'बदल जतन करा',
+  cancelEdit: 'रद्द करा',
+  profileUpdated: 'प्रोफाइल यशस्वीरित्या अपडेट झाले!',
+  profileUpdateError: 'प्रोफाइल अपडेट करण्यात अयशस्वी',
+  demographicDetails: 'लोकसंख्याशास्त्रीय तपशील',
+  personalInfo: 'वैयक्तिक माहिती',
+
+  // Application Tracking & Official Portal
+  applyOnOfficialPortal: 'अधिकृत पोर्टलवर अर्ज करा',
+  visitOfficialPortal: 'अधिकृत पोर्टल पहा',
+  refreshStatus: 'स्थिती ताजी करा',
+  appliedOn: 'अर्ज दिनांक',
+  stepSubmitted: 'सादर केला',
+  stepReview: 'पुनरावलोकनात',
+  stepApproved: 'मंजूर',
+  stepRejected: 'नाकारला',
+  noApplicationsHint: 'योजना शोधा आणि शासकीय पोर्टलवरून अर्ज करा',
+  exploreSchemes: 'योजना शोधा'
 }

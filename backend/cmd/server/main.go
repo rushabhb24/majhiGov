@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"yojana-portal/backend/internal/db"
 	"yojana-portal/backend/internal/handlers"
+	"yojana-portal/backend/internal/middleware"
 )
 
 func main() {
@@ -24,16 +25,24 @@ func main() {
 	}
 	defer db.DB.Close()
 
-	// Setup Routes
-	http.HandleFunc("/api/schemes", handlers.GetSchemesHandler)
-	http.HandleFunc("/api/schemes/", handlers.GetSchemeDetailsHandler) // Handles /api/schemes/:id
-	http.HandleFunc("/api/eligibility-check", handlers.CheckEligibilityHandler)
-	http.HandleFunc("/api/auth/register", handlers.RegisterHandler)
-	http.HandleFunc("/api/auth/login", handlers.LoginHandler)
-	http.HandleFunc("/api/user/profile", handlers.GetUserProfileHandler)
-	http.HandleFunc("/api/user/saved", handlers.SavedSchemesHandler)
-	http.HandleFunc("/api/user/apply", handlers.ApplySchemeHandler)
-	http.HandleFunc("/api/user/applications", handlers.GetUserApplicationsHandler)
+	// Setup Routes with middleware
+	mux := http.NewServeMux()
+
+	// Public routes (no auth required)
+	mux.HandleFunc("/api/schemes", handlers.GetSchemesHandler)
+	mux.HandleFunc("/api/schemes/", handlers.GetSchemeDetailsHandler) // Handles /api/schemes/:id
+	mux.HandleFunc("/api/eligibility-check", handlers.CheckEligibilityHandler)
+	mux.HandleFunc("/api/auth/register", handlers.RegisterHandler)
+	mux.HandleFunc("/api/auth/login", handlers.LoginHandler)
+
+	// Auth-protected routes (JWT middleware validates token and injects user_id)
+	mux.Handle("/api/user/profile", middleware.AuthMiddleware(http.HandlerFunc(handlers.UserProfileHandler)))
+	mux.Handle("/api/user/saved", middleware.AuthMiddleware(http.HandlerFunc(handlers.SavedSchemesHandler)))
+	mux.Handle("/api/user/apply", middleware.AuthMiddleware(http.HandlerFunc(handlers.ApplySchemeHandler)))
+	mux.Handle("/api/user/applications", middleware.AuthMiddleware(http.HandlerFunc(handlers.GetUserApplicationsHandler)))
+
+	// Global middleware chain: Logging → CORS → Routes
+	handler := middleware.LoggingMiddleware(middleware.CorsMiddleware(mux))
 
 	// Fetch PORT from environment
 	port := os.Getenv("PORT")
@@ -42,7 +51,7 @@ func main() {
 	}
 
 	log.Printf("Yojana Portal Backend running on http://localhost:%s", port)
-	err = http.ListenAndServe(":"+port, nil)
+	err = http.ListenAndServe(":"+port, handler)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

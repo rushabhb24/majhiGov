@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -14,24 +13,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"yojana-portal/backend/internal/db"
+	"yojana-portal/backend/internal/middleware"
 	"yojana-portal/backend/internal/models"
 )
 
-// EnableCors helper to add CORS headers
-func EnableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-}
-
 // GetSchemesHandler fetches schemes, supporting category filtering, search, and sorting
 func GetSchemesHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -116,12 +103,6 @@ func GetSchemesHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetSchemeDetailsHandler retrieves details for a single scheme along with linked documents, FAQs, and eligibility
 func GetSchemeDetailsHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -232,12 +213,6 @@ func GetSchemeDetailsHandler(w http.ResponseWriter, r *http.Request) {
 
 // CheckEligibilityHandler evaluates user profile properties against relational eligibility rules using string array checking
 func CheckEligibilityHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -420,11 +395,6 @@ func containsString(list []string, value string) bool {
 
 // RegisterHandler inserts new user credentials and profile information atomically
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -514,11 +484,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 // LoginHandler matches raw password with hash and issues signed JWT bearer tokens
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -567,16 +532,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Issuer JWT
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "super-secure-32-char-jwt-secret-key-majhigov"
-	}
+	// Issue JWT using middleware's centralized secret
+	secret := middleware.GetJWTSecret()
 
-	expiryHoursStr := os.Getenv("JWT_EXPIRY_HOURS")
 	expiryHours := 24
-	if eh, err := strconv.Atoi(expiryHoursStr); err == nil {
-		expiryHours = eh
+	if ehStr := os.Getenv("JWT_EXPIRY_HOURS"); ehStr != "" {
+		if eh, err := strconv.Atoi(ehStr); err == nil {
+			expiryHours = eh
+		}
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -604,55 +567,25 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// GetUserProfileHandler extracts, decodes, and parses Bearer token to return user profile
-func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	if r.Method != "GET" {
+// UserProfileHandler routes GET and PUT requests for user profile
+func UserProfileHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		GetUserProfileHandler(w, r)
+	case "PUT":
+		UpdateUserProfileHandler(w, r)
+	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// GetUserProfileHandler returns the authenticated user's profile
+func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		http.Error(w, "Missing or invalid authorization header", http.StatusUnauthorized)
-		return
-	}
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "super-secure-32-char-jwt-secret-key-majhigov"
-	}
-
-	// Parse Token
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return []byte(secret), nil
-	})
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid or expired session token", http.StatusUnauthorized)
-		return
-	}
-
-	// Extract Claims
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		http.Error(w, "Invalid token format claims", http.StatusUnauthorized)
-		return
-	}
-
-	userIDFloat, ok := claims["user_id"].(float64)
-	if !ok {
-		http.Error(w, "Missing user session identification in token", http.StatusUnauthorized)
-		return
-	}
-	userID := int(userIDFloat)
 
 	// Fetch Profile
 	var profile models.UserProfile
@@ -683,54 +616,92 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// parseUserIDFromToken extracts and parses the JWT token from the request header
-func parseUserIDFromToken(r *http.Request) (int, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		return 0, fmt.Errorf("missing or invalid authorization header")
-	}
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "super-secure-32-char-jwt-secret-key-majhigov"
+// UpdateUserProfileHandler updates the authenticated user's demographic details
+func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return []byte(secret), nil
+	var req struct {
+		FullName       string  `json:"full_name"`
+		DateOfBirth    string  `json:"date_of_birth"`
+		Gender         string  `json:"gender"`
+		State          string  `json:"state"`
+		District       string  `json:"district"`
+		CasteCategory  string  `json:"caste_category"`
+		AnnualIncome   float64 `json:"annual_income"`
+		Occupation     string  `json:"occupation"`
+		EmployeeType   string  `json:"employee_type"`
+		EducationLevel string  `json:"education_level"`
+		IsDisabled     bool    `json:"is_disabled"`
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.FullName == "" {
+		http.Error(w, "Full name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Update user profile
+	queryUpdate := `
+		UPDATE user_profiles SET
+			full_name=$1, date_of_birth=$2, gender=$3, state=$4, district=$5,
+			caste_category=$6, annual_income=$7, occupation=$8, employee_type=$9,
+			education_level=$10, is_disabled=$11, updated_at=NOW()
+		WHERE user_id=$12`
+
+	_, err = db.DB.Exec(queryUpdate,
+		req.FullName, req.DateOfBirth, req.Gender, req.State, req.District,
+		req.CasteCategory, req.AnnualIncome, req.Occupation, req.EmployeeType,
+		req.EducationLevel, req.IsDisabled, userID,
+	)
+	if err != nil {
+		http.Error(w, "Failed to update profile: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch updated profile
+	var profile models.UserProfile
+	queryFetch := `
+		SELECT id, user_id, full_name, date_of_birth, gender, state, district,
+		       caste_category, annual_income, occupation, employee_type,
+		       education_level, is_disabled
+		FROM user_profiles
+		WHERE user_id = $1`
+
+	err = db.DB.QueryRow(queryFetch, userID).Scan(
+		&profile.ID, &profile.UserID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
+		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
+		&profile.EducationLevel, &profile.IsDisabled,
+	)
+	if err != nil {
+		http.Error(w, "Failed to fetch updated profile: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Profile updated successfully",
+		"profile": profile,
 	})
-	if err != nil || !token.Valid {
-		return 0, fmt.Errorf("invalid or expired session token")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, fmt.Errorf("invalid token format claims")
-	}
-
-	userIDFloat, ok := claims["user_id"].(float64)
-	if !ok {
-		return 0, fmt.Errorf("missing user session identification in token")
-	}
-	return int(userIDFloat), nil
 }
 
 // ToggleSavedSchemeHandler toggles the bookmark status of a scheme in PostgreSQL
 func ToggleSavedSchemeHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID, err := parseUserIDFromToken(r)
+	userID, err := middleware.GetUserIDFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -785,17 +756,12 @@ func ToggleSavedSchemeHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetSavedSchemesHandler retrieves all scheme IDs saved by the authenticated user
 func GetSavedSchemesHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID, err := parseUserIDFromToken(r)
+	userID, err := middleware.GetUserIDFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -824,17 +790,12 @@ func GetSavedSchemesHandler(w http.ResponseWriter, r *http.Request) {
 
 // ApplySchemeHandler submits a new application to the database
 func ApplySchemeHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID, err := parseUserIDFromToken(r)
+	userID, err := middleware.GetUserIDFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -883,24 +844,20 @@ func ApplySchemeHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetUserApplicationsHandler retrieves all applications along with scheme names and statuses
 func GetUserApplicationsHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID, err := parseUserIDFromToken(r)
+	userID, err := middleware.GetUserIDFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	query := `
-		SELECT a.id, a.scheme_id, s.title, s.title_hi, s.title_mr, s.government_level, a.status, a.applied_at, a.notes 
+		SELECT a.id, a.scheme_id, s.title, s.title_hi, s.title_mr, s.government_level, 
+		       a.status, a.applied_at, a.notes, s.apply_link, s.official_website
 		FROM user_applied_schemes a
 		JOIN schemes s ON a.scheme_id = s.id
 		WHERE a.user_id = $1
@@ -923,12 +880,14 @@ func GetUserApplicationsHandler(w http.ResponseWriter, r *http.Request) {
 		Status          string    `json:"status"`
 		AppliedAt       time.Time `json:"applied_at"`
 		Notes           string    `json:"notes"`
+		ApplyLink       string    `json:"apply_link"`
+		OfficialWebsite string    `json:"official_website"`
 	}
 
 	var apps []ApplicationResponse = []ApplicationResponse{}
 	for rows.Next() {
 		var a ApplicationResponse
-		err := rows.Scan(&a.ID, &a.SchemeID, &a.Title, &a.TitleHi, &a.TitleMr, &a.GovernmentLevel, &a.Status, &a.AppliedAt, &a.Notes)
+		err := rows.Scan(&a.ID, &a.SchemeID, &a.Title, &a.TitleHi, &a.TitleMr, &a.GovernmentLevel, &a.Status, &a.AppliedAt, &a.Notes, &a.ApplyLink, &a.OfficialWebsite)
 		if err != nil {
 			http.Error(w, "Error scanning database rows: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -942,11 +901,6 @@ func GetUserApplicationsHandler(w http.ResponseWriter, r *http.Request) {
 
 // SavedSchemesHandler routes GET and POST requests for user bookmarks
 func SavedSchemesHandler(w http.ResponseWriter, r *http.Request) {
-	EnableCors(&w)
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 	if r.Method == "GET" {
 		GetSavedSchemesHandler(w, r)
 	} else if r.Method == "POST" {

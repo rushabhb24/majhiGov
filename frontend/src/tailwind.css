@@ -1,0 +1,7 @@
+/* Tailwind CSS v3 Directives */
+/* Preflight is DISABLED in tailwind.config.js to preserve existing styles */
+/* All Tailwind utilities use the 'tw-' prefix (e.g. tw-flex, tw-p-4, tw-text-primary) */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

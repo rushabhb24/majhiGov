@@ -52,11 +52,11 @@ export default {
 
   // Eligibility Results
   resultsTitle: 'परिणाम / आपकी योग्यता',
-  eligibleTitle: 'योग्य योजनाएं (इमें आवेदन करें)',
+  eligibleTitle: 'योग्य योजनाएं (इसमें आवेदन करें)',
   notEligibleTitle: 'अयोग्य योजनाएं',
   noEligible: 'आपकी वर्तमान जानकारी के अनुसार कोई योग्य योजना नहीं मिली।',
   reasonsLabel: 'आप क्यों पात्र हैं:',
-  notEligReasonsLabel: 'अपात्र होने कारण:',
+  notEligReasonsLabel: 'पात्र न होने के कारण:',
   noDetailsChecked: 'बाएं पैनल में दिए गए फॉर्म को भरें और जांचें कि कौन सी योजनाएं आपके लिए उपयुक्त हैं।',
   notCheckedIntro: 'अभी तक जांच नहीं की गई',
 
@@ -74,7 +74,7 @@ export default {
   studentCategory: 'विद्यार्थी',
   womenCategory: 'महिलाएं',
   seniorCategory: 'वरिष्ठ नागरिक',
-  businessCategory: 'व्यावसायी',
+  businessCategory: 'व्यवसायी',
 
   // Scheme Details Modal
   modalOverview: 'योजना का विवरण',
@@ -90,5 +90,61 @@ export default {
   toastSaved: 'योजना सुरक्षित कर ली गई है!',
   toastRemoved: 'योजना सुरक्षित सूची से हटा दी गई है।',
   toastSuccess: 'पात्रता की गणना सफलतापूर्वक की गई!',
-  toastFail: 'गो (Go) बैकएंड से कनेक्ट नहीं हो सका।'
+  toastFail: 'गो (Go) बैकएंड से कनेक्ट नहीं हो सका।',
+
+  // Auth
+  loginRegister: 'लॉगिन / पंजीकरण',
+  logout: 'लॉगआऊट',
+  emailLabel: 'ईमेल पता',
+  phoneLabel: 'फ़ोन नंबर',
+  passwordLabel: 'पासवर्ड',
+  fullNameLabel: 'पूरा नाम',
+  dobLabel: 'जन्म तिथि (YYYY-MM-DD)',
+  districtLabel: 'जिला',
+  submitting: 'प्रक्रिया जारी है...',
+  profilePrefilledToast: 'खाता लॉगिन हो गया और योग्यता प्रोफ़ाइल भर दी गई!',
+  loginSuccessToast: 'आपका स्वागत है! लॉगिन सफल रहा।',
+  regSuccessToast: 'पंजीकरण सफल! अब आप लॉगिन कर सकते हैं।',
+  authErrorToast: 'प्रमाणीकरण विफल। कृपया इनपुट की जांच करें।',
+  loginToApply: 'आवेदन के लिए लॉगिन करें',
+  loginRequiredToast: 'कृपया इस सुविधा का उपयोग करने के लिए पहले लॉगिन करें!',
+
+  // Applications
+  myApplications: 'मेरे आवेदन',
+  applicationTimeline: 'आपके आवेदन ट्रैकिंग समयरेखा (Timeline)',
+  applyFormTitle: 'सरकारी आवेदन पत्र जमा करें',
+  requiredDocumentsInfo: 'जमा करने से पहले आवश्यक दस्तावेजों की समीक्षा करें। सुनिश्चित करें कि आपके पास सभी आवश्यक कागजात हैं।',
+  notesLabel: 'जनसांख्यिकीय विवरण और सहायक विवरण',
+  notesPlaceholder: 'अपने आवेदन के समर्थन में कोई अतिरिक्त विवरण दर्ज करें...',
+  submitAppBtn: 'अभी आवेदन जमा करें',
+  submittingApp: 'आवेदन जमा किया जा रहा है...',
+  toastApplied: 'आवेदन सफलतापूर्वक जमा किया गया!',
+  alreadyAppliedToast: 'इस योजना के लिए आपका एक सक्रिय आवेदन पहले से ही प्रक्रिया में है।',
+  noApplications: 'अभी तक कोई आवेदन जमा नहीं किया गया है। योजना खोजें और आवेदन करें!',
+  statusPending: 'समीक्षा के अधीन (लंबित)',
+  statusApproved: 'लाभ वितरित (स्वीकृत)',
+  statusRejected: 'स्पष्टीकरण आवश्यक (अस्वीकृत)',
+  notesTitle: 'नागरिक का विवरण:',
+
+  // Profile Management
+  myProfile: 'मेरी प्रोफ़ाइल',
+  editProfile: 'प्रोफ़ाइल संपादित करें',
+  saveProfile: 'बदलाव सहेजें',
+  cancelEdit: 'रद्द करें',
+  profileUpdated: 'प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई!',
+  profileUpdateError: 'प्रोफ़ाइल अपडेट करने में विफल',
+  demographicDetails: 'जनसांख्यिकीय विवरण',
+  personalInfo: 'व्यक्तिगत जानकारी',
+
+  // Application Tracking & Official Portal
+  applyOnOfficialPortal: 'आधिकारिक पोर्टल पर आवेदन करें',
+  visitOfficialPortal: 'आधिकारिक पोर्टल देखें',
+  refreshStatus: 'स्थिति ताज़ा करें',
+  appliedOn: 'आवेदन दिनांक',
+  stepSubmitted: 'जमा किया',
+  stepReview: 'समीक्षा में',
+  stepApproved: 'स्वीकृत',
+  stepRejected: 'अस्वीकृत',
+  noApplicationsHint: 'योजना खोजें और सरकारी पोर्टल से आवेदन करें',
+  exploreSchemes: 'योजनाएं खोजें'
 }

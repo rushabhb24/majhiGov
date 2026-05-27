@@ -90,5 +90,61 @@ export default {
   toastSaved: 'Scheme saved to your profile!',
   toastRemoved: 'Scheme removed from your profile.',
   toastSuccess: 'Eligibility calculated successfully!',
-  toastFail: 'Could not connect to Go backend.'
+  toastFail: 'Could not connect to Go backend.',
+
+  // Auth
+  loginRegister: 'Login / Register',
+  logout: 'Logout',
+  emailLabel: 'Email Address',
+  phoneLabel: 'Phone Number',
+  passwordLabel: 'Password',
+  fullNameLabel: 'Full Name',
+  dobLabel: 'Date of Birth (YYYY-MM-DD)',
+  districtLabel: 'District',
+  submitting: 'Processing...',
+  profilePrefilledToast: 'Account logged in & eligibility profile prefilled!',
+  loginSuccessToast: 'Welcome back! Logged in successfully.',
+  regSuccessToast: 'Registration successful! You can now log in.',
+  authErrorToast: 'Authentication failed. Please check your inputs.',
+  loginToApply: 'Login to Apply',
+  loginRequiredToast: 'Please login to use this feature!',
+
+  // Applications
+  myApplications: 'My Applications',
+  applicationTimeline: 'Your Application Tracking Timeline',
+  applyFormTitle: 'Submit Government Application Form',
+  requiredDocumentsInfo: 'Review required documents before submitting your request. Make sure you possess all mandatory credentials.',
+  notesLabel: 'Demographic Notes & Supporting Statement',
+  notesPlaceholder: 'Enter any additional notes or details to support your application...',
+  submitAppBtn: 'Submit Application Now',
+  submittingApp: 'Submitting application...',
+  toastApplied: 'Application submitted successfully!',
+  alreadyAppliedToast: 'You already have an active pending application for this scheme.',
+  noApplications: 'No applications submitted yet. Find a scheme and apply!',
+  statusPending: 'Under Review (Pending)',
+  statusApproved: 'Benefits Disbursed (Approved)',
+  statusRejected: 'Clarification Required (Rejected)',
+  notesTitle: 'Citizen Statement:',
+
+  // Profile Management
+  myProfile: 'My Profile',
+  editProfile: 'Edit Profile',
+  saveProfile: 'Save Changes',
+  cancelEdit: 'Cancel',
+  profileUpdated: 'Profile updated successfully!',
+  profileUpdateError: 'Failed to update profile',
+  demographicDetails: 'Demographic Details',
+  personalInfo: 'Personal Information',
+
+  // Application Tracking & Official Portal
+  applyOnOfficialPortal: 'Apply on Official Portal',
+  visitOfficialPortal: 'Visit Official Portal',
+  refreshStatus: 'Refresh Status',
+  appliedOn: 'Applied on',
+  stepSubmitted: 'Submitted',
+  stepReview: 'Under Review',
+  stepApproved: 'Approved',
+  stepRejected: 'Rejected',
+  noApplicationsHint: 'Find a scheme and apply through the official government portal',
+  exploreSchemes: 'Explore Schemes'
 }
