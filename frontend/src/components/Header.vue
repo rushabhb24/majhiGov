@@ -60,160 +60,172 @@ function handleLogout() {
       <!-- Branding Logo -->
       <div class="logo" @click="navigateTo('explorer')">
         <div class="logo-icon">M</div>
-        <div>MajhiGov <span class="accent-text">Portal</span></div>
+        <div class="logo-text">MajhiGov <span class="accent-text">Portal</span></div>
       </div>
 
-      <!-- Desktop Navigation Tabs (hidden on mobile) -->
-      <nav class="nav-menu nav-desktop">
-        <div 
-          :class="['nav-link', { active: activeTab === 'explorer' }]" 
-          @click="navigateTo('explorer')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <span>{{ t.explorer }}</span>
-        </div>
-        <div 
-          :class="['nav-link', { active: activeTab === 'eligibility' }]" 
-          @click="navigateTo('eligibility')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-          <span>{{ t.eligibility }}</span>
-        </div>
-        <div 
-          :class="['nav-link', { active: activeTab === 'saved' }]" 
-          @click="navigateTo('saved')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-          <span>{{ t.saved }}</span>
-          <span v-if="savedCount > 0" class="badge">{{ savedCount }}</span>
-        </div>
-        <div 
-          v-if="user"
-          :class="['nav-link', { active: activeTab === 'applications' }]" 
-          @click="navigateTo('applications')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-          <span>{{ t.myApplications || 'My Applications' }}</span>
-        </div>
-        <div 
-          v-if="user"
-          :class="['nav-link', { active: activeTab === 'profile' }]" 
-          @click="navigateTo('profile')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <span>{{ t.myProfile || 'My Profile' }}</span>
-        </div>
-      </nav>
+      <!-- Unified Nav + Settings Row (Desktop) -->
+      <div class="nav-row nav-desktop">
+        <!-- Navigation Links -->
+        <nav class="nav-menu">
+          <div 
+            :class="['nav-link', { active: activeTab === 'explorer' }]" 
+            @click="navigateTo('explorer')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>{{ t.explorer }}</span>
+          </div>
+          <div 
+            :class="['nav-link', { active: activeTab === 'eligibility' }]" 
+            @click="navigateTo('eligibility')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            <span>{{ t.eligibility }}</span>
+          </div>
+          <div 
+            :class="['nav-link', { active: activeTab === 'saved' }]" 
+            @click="navigateTo('saved')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <span>{{ t.saved }}</span>
+            <span v-if="savedCount > 0" class="badge">{{ savedCount }}</span>
+          </div>
+          <div 
+            v-if="user"
+            :class="['nav-link', { active: activeTab === 'applications' }]" 
+            @click="navigateTo('applications')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>{{ t.myApplications || 'Applications' }}</span>
+          </div>
+          <div 
+            v-if="user"
+            :class="['nav-link', { active: activeTab === 'profile' }]" 
+            @click="navigateTo('profile')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>{{ t.myProfile || 'Profile' }}</span>
+          </div>
+        </nav>
 
-      <!-- Settings Controls -->
-      <div class="settings-bar">
-        <!-- Language Selector -->
-        <div class="lang-selector">
+        <!-- Divider -->
+        <div class="nav-divider"></div>
+
+        <!-- Settings inline with nav -->
+        <div class="nav-settings">
+          <!-- Language Selector -->
           <select 
             class="form-control select-lang" 
             :value="currentLanguage"
             @change="emit('update:currentLanguage', $event.target.value)"
           >
-            <option value="en">English</option>
-            <option value="hi">हिंदी</option>
-            <option value="mr">मराठी</option>
+            <option value="en">EN</option>
+            <option value="hi">हि</option>
+            <option value="mr">मरा</option>
           </select>
-        </div>
 
-        <!-- Theme Toggle -->
-        <button 
-          class="btn-theme" 
-          @click="emit('update:theme', theme === 'dark' ? 'light' : 'dark')"
-          :title="theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-        >
-          <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.77" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        </button>
+          <!-- Theme Toggle -->
+          <button 
+            class="btn-icon" 
+            @click="emit('update:theme', theme === 'dark' ? 'light' : 'dark')"
+            :title="theme === 'dark' ? 'Light Mode' : 'Dark Mode'"
+          >
+            <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.77" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
 
-        <!-- Rural Accessibility Toggle (hidden on very small screens) -->
-        <button 
-          :class="['btn-toggle', 'hide-mobile-xs', { active: ruralMode }]" 
-          @click="emit('update:ruralMode', !ruralMode)"
-          :title="t.ruralMode"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-        </button>
+          <!-- Rural Mode Toggle -->
+          <button 
+            :class="['btn-icon', { active: ruralMode }]" 
+            @click="emit('update:ruralMode', !ruralMode)"
+            :title="ruralMode ? (t.normalMode || 'Normal Mode') : (t.ruralMode || 'Rural Mode')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          </button>
 
-        <!-- User Authentication Control -->
-        <div v-if="user" class="user-profile-badge">
-          <div class="user-avatar" :title="user.full_name">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <!-- Login / User Badge -->
+          <div v-if="user" class="user-profile-badge">
+            <div class="user-avatar" :title="user.full_name">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <span class="user-name-text">{{ user.full_name.split(' ')[0] }}</span>
+            <button class="btn-logout" @click="handleLogout" :title="t.logout || 'Logout'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
           </div>
-          <span class="user-name-text">{{ user.full_name.split(' ')[0] }}</span>
-          <button class="btn-logout" @click="handleLogout" :title="t.logout || 'Logout'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <button v-else class="btn-login" @click="emit('loginClick')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            <span>{{ t.loginRegister || 'Login' }}</span>
           </button>
         </div>
-        <button v-else class="btn-login" @click="emit('loginClick')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-          <span class="hide-mobile-xs">{{ t.loginRegister || 'Login' }}</span>
-        </button>
-
-        <!-- Hamburger Menu Button (visible on mobile only) -->
-        <button 
-          class="btn-hamburger" 
-          @click="mobileMenuOpen = !mobileMenuOpen"
-          :title="mobileMenuOpen ? 'Close menu' : 'Open menu'"
-          :class="{ 'is-active': mobileMenuOpen }"
-        >
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-        </button>
       </div>
+
+      <!-- Hamburger Button (mobile only) -->
+      <button 
+        class="btn-hamburger" 
+        @click="mobileMenuOpen = !mobileMenuOpen"
+        :class="{ 'is-active': mobileMenuOpen }"
+      >
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
     </div>
 
-    <!-- Mobile Slide-down Navigation Drawer -->
+    <!-- Mobile Slide-down Drawer -->
     <Transition name="slide-drawer">
       <div v-if="mobileMenuOpen" class="mobile-drawer">
         <nav class="mobile-nav">
-          <div 
-            :class="['mobile-nav-link', { active: activeTab === 'explorer' }]"
-            @click="navigateTo('explorer')"
-          >
+          <div :class="['mobile-nav-link', { active: activeTab === 'explorer' }]" @click="navigateTo('explorer')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <span>{{ t.explorer }}</span>
           </div>
-          <div 
-            :class="['mobile-nav-link', { active: activeTab === 'eligibility' }]"
-            @click="navigateTo('eligibility')"
-          >
+          <div :class="['mobile-nav-link', { active: activeTab === 'eligibility' }]" @click="navigateTo('eligibility')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
             <span>{{ t.eligibility }}</span>
           </div>
-          <div 
-            :class="['mobile-nav-link', { active: activeTab === 'saved' }]"
-            @click="navigateTo('saved')"
-          >
+          <div :class="['mobile-nav-link', { active: activeTab === 'saved' }]" @click="navigateTo('saved')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             <span>{{ t.saved }}</span>
             <span v-if="savedCount > 0" class="badge" style="margin-left:auto;">{{ savedCount }}</span>
           </div>
-          <div 
-            v-if="user"
-            :class="['mobile-nav-link', { active: activeTab === 'applications' }]"
-            @click="navigateTo('applications')"
-          >
+          <div v-if="user" :class="['mobile-nav-link', { active: activeTab === 'applications' }]" @click="navigateTo('applications')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            <span>{{ t.myApplications || 'My Applications' }}</span>
+            <span>{{ t.myApplications || 'Applications' }}</span>
           </div>
-          <div 
-            v-if="user"
-            :class="['mobile-nav-link', { active: activeTab === 'profile' }]"
-            @click="navigateTo('profile')"
-          >
+          <div v-if="user" :class="['mobile-nav-link', { active: activeTab === 'profile' }]" @click="navigateTo('profile')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>{{ t.myProfile || 'My Profile' }}</span>
+            <span>{{ t.myProfile || 'Profile' }}</span>
           </div>
-          <!-- Rural toggle for mobile -->
-          <div class="mobile-nav-link" @click="emit('update:ruralMode', !ruralMode); mobileMenuOpen = false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            <span>{{ ruralMode ? (t.normalMode || 'Normal Mode') : (t.ruralMode || 'Rural Mode') }}</span>
+
+          <!-- Mobile Settings Section -->
+          <div class="mobile-settings-divider"></div>
+          <div class="mobile-settings-row">
+            <select 
+              class="form-control select-lang" 
+              :value="currentLanguage"
+              @change="emit('update:currentLanguage', $event.target.value)"
+              style="flex: 1;"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+              <option value="mr">मराठी (Marathi)</option>
+            </select>
+            <button class="btn-icon" @click="emit('update:theme', theme === 'dark' ? 'light' : 'dark')">
+              <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.77" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <button :class="['btn-icon', { active: ruralMode }]" @click="emit('update:ruralMode', !ruralMode)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            </button>
+          </div>
+          <!-- Mobile login/logout -->
+          <div v-if="user" class="mobile-nav-link" @click="handleLogout">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>{{ t.logout || 'Logout' }} ({{ user.full_name.split(' ')[0] }})</span>
+          </div>
+          <div v-else class="mobile-nav-link" @click="emit('loginClick'); mobileMenuOpen = false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            <span>{{ t.loginRegister || 'Login / Register' }}</span>
           </div>
         </nav>
       </div>
@@ -222,6 +234,119 @@ function handleLogout() {
 </template>
 
 <style scoped>
+/* Unified nav + settings row */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--clr-surface-alt);
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--clr-border);
+  padding: 3px;
+}
+
+.nav-menu {
+  display: flex;
+  gap: 2px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--clr-border);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+.nav-settings {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 2px;
+}
+
+/* Icon button (theme, rural) */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  color: var(--clr-primary);
+  background: var(--clr-primary-light);
+}
+
+.btn-icon.active {
+  color: var(--clr-secondary);
+  background: var(--clr-secondary-light);
+}
+
+/* Compact language selector */
+.nav-settings .select-lang {
+  padding: 5px 26px 5px 8px !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: var(--border-radius-full) !important;
+  max-width: 60px;
+  height: 32px;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+.nav-settings .select-lang:focus {
+  border-color: var(--clr-primary) !important;
+  background-color: var(--clr-surface) !important;
+}
+
+/* Compact user badge inside nav row */
+.nav-settings .user-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 8px;
+  background: var(--clr-primary-light);
+  border: none;
+  border-radius: var(--border-radius-full);
+}
+
+.nav-settings .user-avatar {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-settings .user-name-text {
+  font-size: 0.78rem;
+  max-width: 70px;
+}
+
+.nav-settings .btn-logout {
+  width: 24px;
+  height: 24px;
+}
+
+/* Compact login button */
+.nav-settings .btn-login {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  gap: 5px;
+}
+
 /* Hamburger button — hidden on desktop */
 .btn-hamburger {
   display: none;
@@ -267,7 +392,6 @@ function handleLogout() {
   display: none;
 }
 
-/* Mobile Nav Links */
 .mobile-nav {
   display: flex;
   flex-direction: column;
@@ -300,11 +424,38 @@ function handleLogout() {
   box-shadow: 0 4px 12px var(--clr-primary-glow);
 }
 
+.mobile-settings-divider {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 8px 0;
+}
+
+.mobile-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+}
+
+.mobile-settings-row .select-lang {
+  padding: 8px 32px 8px 12px !important;
+  font-size: 0.85rem;
+  border-radius: var(--border-radius-full) !important;
+}
+
+.mobile-settings-row .btn-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--clr-surface-alt);
+  border: 1px solid var(--clr-border);
+  border-radius: 50%;
+}
+
 /* Slide drawer animation */
 .slide-drawer-enter-active,
 .slide-drawer-leave-active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 500px;
+  max-height: 600px;
   overflow: hidden;
 }
 .slide-drawer-enter-from,
@@ -313,7 +464,7 @@ function handleLogout() {
   opacity: 0;
 }
 
-/* --- Mobile breakpoint: show hamburger, hide desktop nav --- */
+/* --- Mobile: show hamburger, hide unified nav row --- */
 @media (max-width: 768px) {
   .nav-desktop {
     display: none !important;
@@ -328,9 +479,19 @@ function handleLogout() {
     background: var(--clr-surface);
     border-top: 1px solid var(--clr-border);
   }
+}
 
-  .hide-mobile-xs {
+/* Tablet: allow nav row to scroll if needed */
+@media (max-width: 1100px) and (min-width: 769px) {
+  .nav-menu {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-menu::-webkit-scrollbar {
     display: none;
+  }
+  .nav-link span {
+    font-size: 0.78rem;
   }
 }
 
@@ -343,12 +504,6 @@ function handleLogout() {
   .user-profile-badge {
     gap: 4px;
     padding: 4px;
-  }
-
-  .select-lang {
-    max-width: 72px !important;
-    font-size: 0.78rem !important;
-    padding: 6px 28px 6px 8px !important;
   }
 }
 </style>

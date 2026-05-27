@@ -46,13 +46,21 @@ function handleTabChange(tabName) {
   router.push(path)
 }
 
-// Handle apply action — opens official link + records application
+// Handle apply action — opens official link synchronously, then records application
 function handleApplyAction(scheme) {
   if (!authStore.isLoggedIn) {
     authStore.openAuthModal('login')
     uiStore.showToast(t('loginRequiredToast'), 'info')
     return
   }
+  // Open official portal IMMEDIATELY (synchronous user gesture — won't be popup-blocked)
+  const applyUrl = scheme.apply_link || scheme.official_website
+  if (applyUrl) {
+    window.open(applyUrl, '_blank', 'noopener,noreferrer')
+  } else {
+    uiStore.showToast(t('noOfficialLink') || 'Official apply link not available for this scheme.', 'warning')
+  }
+  // Record in background (async — doesn't need popup)
   applicationStore.applyViaOfficialLink(scheme)
 }
 

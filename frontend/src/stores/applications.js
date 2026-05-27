@@ -39,8 +39,9 @@ export const useApplicationStore = defineStore('applications', () => {
 
   /**
    * Apply via official link:
-   * 1. Open the official apply link in a new browser tab
-   * 2. Record the application in the backend database
+   * Records the application in the backend database.
+   * Note: The caller (App.vue handleApplyAction) opens the official URL synchronously
+   * before calling this function to avoid popup blockers.
    */
   async function applyViaOfficialLink(scheme) {
     const { useAuthStore } = await import('./auth.js')
@@ -48,16 +49,11 @@ export const useApplicationStore = defineStore('applications', () => {
     const { useUiStore } = await import('./ui.js')
     const uiStore = useUiStore()
 
-    if (!authStore.token) {
-      authStore.openAuthModal('login')
-      uiStore.showToast('Please login to apply for schemes!', 'info')
-      return
-    }
+    if (!authStore.token) return
 
+    // 2. Record the application in the background (non-blocking)
     applySubmitting.value = true
-
     try {
-      // 1. Record the application in our database
       const payload = {
         scheme_id: Number(scheme.id),
         notes: 'Applied via official portal link'
@@ -72,29 +68,19 @@ export const useApplicationStore = defineStore('applications', () => {
         body: JSON.stringify(payload)
       })
 
-      if (!response.ok) {
-        const errText = await response.text()
-        // If already applied, still open the link
-        if (errText.includes('already have a pending')) {
+      if (response.ok) {
+        uiStore.showToast('Application recorded! Track your status in My Applications.', 'success')
+        fetchApplications()
+      } else {
+        const errData = await response.text()
+        if (response.status === 409 || errData.includes('already')) {
           uiStore.showToast('You already applied for this scheme. Opening official portal...', 'info')
         } else {
-          throw new Error(errText || 'Failed to record application')
+          console.error('Failed to record application:', errData)
         }
-      } else {
-        uiStore.showToast('Application recorded! Redirecting to official portal...', 'success')
-        fetchApplications()
-      }
-
-      // 2. Open the official apply link in a new tab
-      const applyUrl = scheme.apply_link || scheme.official_website
-      if (applyUrl) {
-        window.open(applyUrl, '_blank', 'noopener,noreferrer')
-      } else {
-        uiStore.showToast('Official apply link not available for this scheme.', 'warning')
       }
     } catch (err) {
-      console.error(err)
-      uiStore.showToast(err.message || 'Error recording application.', 'danger')
+      console.error('Error recording application:', err)
     } finally {
       applySubmitting.value = false
     }
