@@ -1597,7 +1597,7 @@ select.form-control {
     gap: 12px;
   }
 
-  .search-filter-row > .form-group,
+  .search-filter-row>.form-group,
   .sort-field {
     flex: 1 1 100%;
   }

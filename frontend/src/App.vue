@@ -124,6 +124,68 @@ onMounted(() => {
       :type="uiStore.toast.type"
     />
 
+    <!-- Beautiful Glassmorphic Application Form Modal -->
+    <Transition name="modal-fade">
+      <div v-if="applicationStore.applyModalOpen && applicationStore.applyingScheme" class="modal-overlay" @click.self="applicationStore.closeApplyModal()">
+        <div class="modal-content card" style="max-width: 600px; width: 100%;">
+          <button class="btn-close-modal" @click="applicationStore.closeApplyModal()" title="Close Modal">×</button>
+          
+          <h2 class="modal-title">{{ t('applyFormTitle') || 'Submit Government Application Form' }}</h2>
+          <h4 class="mt-2 text-muted" style="font-family: var(--font-heading); font-weight: 600; color: var(--clr-primary);">
+            {{ uiStore.currentLanguage === 'mr' ? (applicationStore.applyingScheme.title_mr || applicationStore.applyingScheme.title) : (uiStore.currentLanguage === 'hi' ? (applicationStore.applyingScheme.title_hi || applicationStore.applyingScheme.title) : applicationStore.applyingScheme.title) }}
+          </h4>
+          
+          <hr class="divider mt-4" />
+          
+          <div class="modal-scroll-area">
+            <p class="text-muted mt-2" style="font-size: 0.9rem; line-height: 1.5;">
+              {{ t('requiredDocumentsInfo') || 'Review required documents before submitting your request. Make sure you possess all mandatory credentials.' }}
+            </p>
+            
+            <!-- Mandatory Documents checklist for verification -->
+            <div class="docs-checklist mt-4" style="background: var(--clr-surface-alt); padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--clr-border);">
+              <h5 style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">📋 {{ t('modalDocs') || 'Required Documents' }}</h5>
+              <div v-for="doc in applicationStore.applyingScheme.documents" :key="doc.id" style="display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; font-size: 0.88rem;">
+                <span>🟢</span>
+                <div>
+                  <strong style="color: var(--clr-text-main);">{{ uiStore.currentLanguage === 'mr' ? doc.document_name_mr : (uiStore.currentLanguage === 'hi' ? doc.document_name_hi : doc.document_name) }}</strong>
+                  <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;" :style="doc.is_mandatory ? 'background: rgba(239, 68, 68, 0.15); color: var(--clr-danger);' : 'background: rgba(16, 185, 129, 0.15); color: var(--clr-success);'">
+                    {{ doc.is_mandatory ? t('mandatoryBadge') || 'Mandatory' : t('optionalBadge') || 'Optional' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Notes Input Form -->
+            <div class="form-group mt-4">
+              <label class="form-label" for="apply-notes-input" style="font-weight: 600;">{{ t('notesLabel') || 'Demographic Notes & Supporting Statement' }}</label>
+              <textarea 
+                id="apply-notes-input" 
+                v-model="applicationStore.applyNotes" 
+                class="form-control" 
+                rows="4" 
+                :placeholder="t('notesPlaceholder') || 'Enter any additional notes or details to support your application...'" 
+                style="resize: vertical; font-family: var(--font-body); padding: 12px; margin-top: 6px;"
+              ></textarea>
+            </div>
+          </div>
+          
+          <div class="modal-footer mt-4">
+            <button class="btn btn-secondary" @click="applicationStore.closeApplyModal()">
+              {{ t('back') || 'Back' }}
+            </button>
+            <button 
+              class="btn btn-primary" 
+              @click="applicationStore.submitApplication()"
+              :disabled="applicationStore.applySubmitting"
+            >
+              {{ applicationStore.applySubmitting ? (t('submittingApp') || 'Submitting...') : (t('submitAppBtn') || 'Submit Application') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Beautiful Glassmorphic Auth Modal -->
     <Transition name="modal-fade">
       <div v-if="authStore.authModalOpen" class="modal-overlay" @click.self="authStore.closeAuthModal()">

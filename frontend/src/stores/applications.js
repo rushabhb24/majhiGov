@@ -7,6 +7,9 @@ export const useApplicationStore = defineStore('applications', () => {
   const applications = ref([])
   const applySubmitting = ref(false)
   const refreshing = ref(false)
+  const applyModalOpen = ref(false)
+  const applyNotes = ref('')
+  const applyingScheme = ref(null)
 
   // Actions
   async function fetchApplications() {
@@ -90,6 +93,68 @@ export const useApplicationStore = defineStore('applications', () => {
     applications.value = []
   }
 
+  function openApplyModal(scheme) {
+    applyingScheme.value = scheme
+    applyNotes.value = ''
+    applyModalOpen.value = true
+  }
+
+  function closeApplyModal() {
+    applyModalOpen.value = false
+    applyingScheme.value = null
+    applyNotes.value = ''
+  }
+
+  async function submitApplication() {
+    const { useAuthStore } = await import('./auth.js')
+    const authStore = useAuthStore()
+    const { useUiStore } = await import('./ui.js')
+    const uiStore = useUiStore()
+
+    if (!authStore.token || !applyingScheme.value) return
+
+    applySubmitting.value = true
+    try {
+      const payload = {
+        scheme_id: Number(applyingScheme.value.id),
+        notes: applyNotes.value
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/user/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.token}`
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (response.status === 409) {
+        uiStore.showToast(uiStore.currentLanguage === 'mr' ? 'या योजनेसाठी तुमचा एक अर्ज आधीच प्रलंबित आहे.' : (uiStore.currentLanguage === 'hi' ? 'इस योजना के लिए आपका एक सक्रिय आवेदन पहले से ही प्रक्रिया में है।' : 'You already have an active pending application for this scheme.'), 'warning')
+        closeApplyModal()
+        return
+      }
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(errText || 'Failed to submit application')
+      }
+
+      uiStore.showToast(uiStore.currentLanguage === 'mr' ? 'अर्ज यशस्वीरित्या सादर केला गेला!' : (uiStore.currentLanguage === 'hi' ? 'आवेदन सफलतापूर्वक जमा किया गया!' : 'Application submitted successfully!'), 'success')
+      closeApplyModal()
+
+      await fetchApplications()
+
+      const router = (await import('../router/index.js')).default
+      router.push('/applications')
+    } catch (err) {
+      console.error(err)
+      uiStore.showToast(err.message || 'Error submitting application.', 'danger')
+    } finally {
+      applySubmitting.value = false
+    }
+  }
+
   /**
    * Get the status step number for progress visualization
    * pending = 1, under_review = 2, approved/rejected = 3
@@ -105,10 +170,16 @@ export const useApplicationStore = defineStore('applications', () => {
     applications,
     applySubmitting,
     refreshing,
+    applyModalOpen,
+    applyNotes,
+    applyingScheme,
     fetchApplications,
     refreshApplications,
     applyViaOfficialLink,
     clearApplications,
-    getStatusStep
+    getStatusStep,
+    openApplyModal,
+    closeApplyModal,
+    submitApplication
   }
 })
