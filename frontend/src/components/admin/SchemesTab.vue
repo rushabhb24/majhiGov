@@ -173,25 +173,25 @@ const getCategoryEmoji = (catName) => {
 
 .filter-group select {
   padding: 7px 10px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
+  border: 0.5px solid var(--border);
   border-radius: 6px; /* var(--radius) */
   font-size: 13px;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
 }
 
 .filter-group select:focus {
-  border-color: #1a3a6b;
+  border-color: var(--primary);
 }
 
 .mt-3 { margin-top: 12px; }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
@@ -206,20 +206,20 @@ const getCategoryEmoji = (catName) => {
 }
 
 .data-table th {
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
   text-align: left;
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
+  color: var(--text2);
   padding: 8px 12px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .data-table td {
   padding: 10px 12px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
   font-size: 13px;
   vertical-align: middle;
 }
@@ -229,23 +229,23 @@ const getCategoryEmoji = (catName) => {
 }
 
 .data-table tr:hover td {
-  background-color: #f8fafc;
+  background-color: var(--bg2);
 }
 
 .scheme-title-text {
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .scheme-subtitle-text {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 2px;
 }
 
 .cat-pill {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 /* Badges */
@@ -259,10 +259,10 @@ const getCategoryEmoji = (catName) => {
   line-height: 1;
 }
 
-.badge.active { background-color: #f0fdf4; color: #16a34a; }
-.badge.inactive { background-color: #f8fafc; color: #64748b; }
-.badge.central { background-color: #e8eef8; color: #1a3a6b; }
-.badge.state { background-color: #fff4ed; color: #f97316; }
+.badge.active { background-color: var(--success-bg); color: var(--success); }
+.badge.inactive { background-color: var(--bg2); color: var(--text2); }
+.badge.central { background-color: var(--primary-light); color: var(--primary); }
+.badge.state { background-color: var(--accent-light); color: var(--accent); }
 
 /* Table Actions */
 .table-actions {
@@ -274,9 +274,9 @@ const getCategoryEmoji = (catName) => {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
-  background-color: #ffffff;
-  color: #64748b;
+  border: 0.5px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -292,13 +292,13 @@ const getCategoryEmoji = (catName) => {
 }
 
 .action-btn:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg2);
+  color: var(--text);
 }
 
 .action-btn.danger-hover:hover {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #dc2626;
+  background-color: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 </style>

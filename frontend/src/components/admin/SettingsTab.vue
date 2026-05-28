@@ -69,21 +69,21 @@ const emit = defineEmits(['refresh'])
 }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .card-header {
   padding: 14px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .card-body {
@@ -100,16 +100,16 @@ const emit = defineEmits(['refresh'])
 
 .form-label {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .form-input {
   padding: 8px 10px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border: 0.5px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
@@ -117,21 +117,21 @@ const emit = defineEmits(['refresh'])
 }
 
 .readonly-input {
-  background-color: #f8fafc; /* var(--bg2) */
-  color: #64748b; /* var(--text2) */
+  background-color: var(--bg2);
+  color: var(--text2);
 }
 
 .divider {
   border: none;
-  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-top: 0.5px solid var(--border);
 }
 
 .mt-3 { margin-top: 12px; }
 .mb-3 { margin-bottom: 12px; }
 
 .refresh-btn {
-  background-color: #1a3a6b; /* var(--primary) */
-  color: #ffffff;
+  background-color: var(--primary);
+  color: var(--clr-text-light);
   border: none;
   border-radius: 6px;
   padding: 8px 16px;

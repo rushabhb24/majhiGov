@@ -151,8 +151,8 @@ function getRegisteredText(user) {
 }
 
 .stat-card {
-  background-color: #ffffff; /* var(--bg) */
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 8px; /* var(--radius) */
   padding: 14px 16px;
   box-sizing: border-box;
@@ -168,10 +168,10 @@ function getRegisteredText(user) {
   font-size: 18px;
 }
 
-.stat-icon-box.blue { background-color: #e8eef8; color: #1a3a6b; }
-.stat-icon-box.green { background-color: #f0fdf4; color: #16a34a; }
-.stat-icon-box.orange { background-color: #fff4ed; color: #f97316; }
-.stat-icon-box.red { background-color: #fef2f2; color: #dc2626; }
+.stat-icon-box.blue { background-color: var(--primary-light); color: var(--primary); }
+.stat-icon-box.green { background-color: var(--success-bg); color: var(--success); }
+.stat-icon-box.orange { background-color: var(--accent-light); color: var(--accent); }
+.stat-icon-box.red { background-color: var(--danger-bg); color: var(--danger); }
 
 .stat-icon-box i {
   font-size: 18px !important;
@@ -180,21 +180,21 @@ function getRegisteredText(user) {
 .stat-number {
   font-size: 22px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   margin-top: 10px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 2px;
 }
 
 .mt-4 { margin-top: 16px; }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
@@ -209,22 +209,23 @@ function getRegisteredText(user) {
 }
 
 .data-table th {
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
   text-align: left;
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
+  color: var(--text2);
   padding: 8px 12px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .data-table td {
   padding: 10px 12px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
   font-size: 13px;
   vertical-align: middle;
+  color: var(--text);
 }
 
 .data-table tr:last-child td {
@@ -232,7 +233,7 @@ function getRegisteredText(user) {
 }
 
 .data-table tr:hover td {
-  background-color: #f8fafc;
+  background-color: var(--bg2);
 }
 
 .user-cell {
@@ -255,10 +256,10 @@ function getRegisteredText(user) {
 }
 
 /* Specific Avatar Colors matching spec */
-.rk-avatar { background-color: #e8eef8; color: #1a3a6b; } /* primary-light bg, primary text */
-.ps-avatar { background-color: #fff4ed; color: #f97316; } /* accent-light bg, accent text */
-.aj-avatar { background-color: #f0fdf4; color: #16a34a; } /* success-bg bg, success text */
-.default-avatar { background-color: #f1f5f9; color: #64748b; }
+.rk-avatar { background-color: var(--primary-light); color: var(--primary); }
+.ps-avatar { background-color: var(--accent-light); color: var(--accent); }
+.aj-avatar { background-color: var(--success-bg); color: var(--success); }
+.default-avatar { background-color: var(--bg3); color: var(--text2); }
 
 .user-meta {
   display: flex;
@@ -267,13 +268,13 @@ function getRegisteredText(user) {
 
 .user-name {
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   line-height: 1.3;
 }
 
 .user-email {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 1px;
   line-height: 1.2;
 }
@@ -289,8 +290,8 @@ function getRegisteredText(user) {
   line-height: 1;
 }
 
-.badge.active { background-color: #f0fdf4; color: #16a34a; }
-.badge.inactive { background-color: #f1f5f9; color: #64748b; }
+.badge.active { background-color: var(--success-bg); color: var(--success); }
+.badge.inactive { background-color: var(--bg3); color: var(--text2); }
 
 /* Table Actions */
 .table-actions {
@@ -302,9 +303,9 @@ function getRegisteredText(user) {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
-  background-color: #ffffff;
-  color: #64748b;
+  border: 0.5px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,13 +321,13 @@ function getRegisteredText(user) {
 }
 
 .action-btn:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg2);
+  color: var(--text);
 }
 
 .action-btn.danger-hover:hover {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #dc2626;
+  background-color: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 </style>

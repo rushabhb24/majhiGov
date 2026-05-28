@@ -142,21 +142,21 @@ function getDotClass(type) {
 }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .card-header {
   padding: 14px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .card-body {
@@ -175,16 +175,16 @@ function getDotClass(type) {
 
 .form-label {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .form-input {
   padding: 8px 10px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border: 0.5px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
@@ -192,7 +192,7 @@ function getDotClass(type) {
 }
 
 .form-input:focus {
-  border-color: #1a3a6b;
+  border-color: var(--primary);
 }
 
 textarea.form-input {
@@ -200,8 +200,8 @@ textarea.form-input {
 }
 
 .submit-btn {
-  background-color: #1a3a6b; /* var(--primary) */
-  color: #ffffff;
+  background-color: var(--primary);
+  color: var(--clr-text-light);
   border: none;
   border-radius: 6px;
   padding: 9px 18px;
@@ -239,7 +239,7 @@ textarea.form-input {
   display: flex;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
   align-items: flex-start;
   box-sizing: border-box;
 }
@@ -256,9 +256,9 @@ textarea.form-input {
   flex-shrink: 0;
 }
 
-.dot-indicator.orange { background-color: #f97316; } /* var(--accent) */
-.dot-indicator.green { background-color: #16a34a; } /* var(--success) */
-.dot-indicator.blue { background-color: #1a3a6b; } /* var(--primary) */
+.dot-indicator.orange { background-color: var(--accent); }
+.dot-indicator.green { background-color: var(--success); }
+.dot-indicator.blue { background-color: var(--primary); }
 
 .activity-content {
   flex-grow: 1;
@@ -267,12 +267,12 @@ textarea.form-input {
 .activity-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .activity-subtext {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 2px;
 }
 </style>

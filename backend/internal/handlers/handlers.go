@@ -3,7 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -506,7 +508,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		SELECT u.id, u.email, u.phone, u.password_hash, u.is_admin,
 		       p.id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
 		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
-		       p.education_level, p.is_disabled
+		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, '')
 		FROM users u
 		JOIN user_profiles p ON u.id = p.user_id
 		WHERE u.email = $1`
@@ -515,7 +517,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		&userID, &email, &phone, &passwordHash, &isAdmin,
 		&profile.ID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
 		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
-		&profile.EducationLevel, &profile.IsDisabled,
+		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL,
 	)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
@@ -556,6 +558,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile.UserID = userID
+	profile.Email = email
+	profile.Phone = phone
 	resp := models.AuthResponse{
 		Success: true,
 		Message: "Login successful!",
@@ -587,19 +591,20 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch Profile
+	// Fetch Profile joined with credentials
 	var profile models.UserProfile
 	query := `
-		SELECT id, user_id, full_name, date_of_birth, gender, state, district,
-		       caste_category, annual_income, occupation, employee_type,
-		       education_level, is_disabled
-		FROM user_profiles
-		WHERE user_id = $1`
+		SELECT p.id, p.user_id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
+		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
+		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), u.email, u.phone
+		FROM user_profiles p
+		JOIN users u ON p.user_id = u.id
+		WHERE p.user_id = $1`
 
 	err = db.DB.QueryRow(query, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
 		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
-		&profile.EducationLevel, &profile.IsDisabled,
+		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &profile.Email, &profile.Phone,
 	)
 	if err == sql.ErrNoRows {
 		http.Error(w, "User profile not found", http.StatusNotFound)
@@ -636,6 +641,10 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		EmployeeType   string  `json:"employee_type"`
 		EducationLevel string  `json:"education_level"`
 		IsDisabled     bool    `json:"is_disabled"`
+		AvatarURL      string  `json:"avatar_url"`
+		Email          string  `json:"email"`
+		Phone          string  `json:"phone"`
+		Password       string  `json:"password"`
 	}
 
 	err = json.NewDecoder(r.Body).Decode(&req)
@@ -649,37 +658,105 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update user profile
-	queryUpdate := `
+	// Begin SQL transaction
+	tx, err := db.DB.Begin()
+	if err != nil {
+		http.Error(w, "Failed to start transaction: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+
+	// 1. Verify and update User email, phone, and password if provided
+	if req.Email != "" {
+		var exists bool
+		err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND id != $2)", req.Email, userID).Scan(&exists)
+		if err != nil {
+			http.Error(w, "Failed to check email uniqueness: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if exists {
+			http.Error(w, "Email is already registered by another user", http.StatusBadRequest)
+			return
+		}
+
+		_, err = tx.Exec("UPDATE users SET email = $1 WHERE id = $2", req.Email, userID)
+		if err != nil {
+			http.Error(w, "Failed to update email: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if req.Phone != "" {
+		var exists bool
+		err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE phone = $1 AND id != $2)", req.Phone, userID).Scan(&exists)
+		if err != nil {
+			http.Error(w, "Failed to check phone uniqueness: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if exists {
+			http.Error(w, "Phone number is already registered by another user", http.StatusBadRequest)
+			return
+		}
+
+		_, err = tx.Exec("UPDATE users SET phone = $1 WHERE id = $2", req.Phone, userID)
+		if err != nil {
+			http.Error(w, "Failed to update phone number: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if req.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			http.Error(w, "Failed to hash password: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = tx.Exec("UPDATE users SET password_hash = $1 WHERE id = $2", string(hash), userID)
+		if err != nil {
+			http.Error(w, "Failed to update password: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// 2. Update user profile details
+	queryUpdateProfile := `
 		UPDATE user_profiles SET
 			full_name=$1, date_of_birth=$2, gender=$3, state=$4, district=$5,
 			caste_category=$6, annual_income=$7, occupation=$8, employee_type=$9,
-			education_level=$10, is_disabled=$11, updated_at=NOW()
-		WHERE user_id=$12`
+			education_level=$10, is_disabled=$11, avatar_url=$12, updated_at=NOW()
+		WHERE user_id=$13`
 
-	_, err = db.DB.Exec(queryUpdate,
+	_, err = tx.Exec(queryUpdateProfile,
 		req.FullName, req.DateOfBirth, req.Gender, req.State, req.District,
 		req.CasteCategory, req.AnnualIncome, req.Occupation, req.EmployeeType,
-		req.EducationLevel, req.IsDisabled, userID,
+		req.EducationLevel, req.IsDisabled, req.AvatarURL, userID,
 	)
 	if err != nil {
-		http.Error(w, "Failed to update profile: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to update profile details: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, "Failed to commit database changes: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Fetch updated profile
 	var profile models.UserProfile
 	queryFetch := `
-		SELECT id, user_id, full_name, date_of_birth, gender, state, district,
-		       caste_category, annual_income, occupation, employee_type,
-		       education_level, is_disabled
-		FROM user_profiles
-		WHERE user_id = $1`
+		SELECT p.id, p.user_id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
+		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
+		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), u.email, u.phone
+		FROM user_profiles p
+		JOIN users u ON p.user_id = u.id
+		WHERE p.user_id = $1`
 
 	err = db.DB.QueryRow(queryFetch, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
 		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
-		&profile.EducationLevel, &profile.IsDisabled,
+		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &profile.Email, &profile.Phone,
 	)
 	if err != nil {
 		http.Error(w, "Failed to fetch updated profile: "+err.Error(), http.StatusInternalServerError)
@@ -908,4 +985,79 @@ func SavedSchemesHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+// TranslateHandler handles client GET translation proxy requests
+func TranslateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	text := r.URL.Query().Get("q")
+	target := r.URL.Query().Get("target")
+
+	if text == "" {
+		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
+		return
+	}
+
+	if target == "" {
+		target = "hi" // Default target Hindi
+	}
+
+	translated, err := translateTextViaGoogle(text, target)
+	if err != nil {
+		http.Error(w, "Translation failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":        true,
+		"translatedText": translated,
+	})
+}
+
+func translateTextViaGoogle(text string, target string) (string, error) {
+	apiURL := fmt.Sprintf("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=%s&dt=t&q=%s",
+		target, url.QueryEscape(text))
+
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("google translate api returned status %d", resp.StatusCode)
+	}
+
+	var result []interface{}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return "", err
+	}
+
+	if len(result) == 0 || result[0] == nil {
+		return "", fmt.Errorf("invalid translation array structure")
+	}
+
+	parts, ok := result[0].([]interface{})
+	if !ok {
+		return "", fmt.Errorf("invalid translation parts array")
+	}
+
+	var builder strings.Builder
+	for _, p := range parts {
+		inner, ok := p.([]interface{})
+		if ok && len(inner) > 0 {
+			translatedStr, ok := inner[0].(string)
+			if ok {
+				builder.WriteString(translatedStr)
+			}
+		}
+	}
+
+	return builder.String(), nil
 }

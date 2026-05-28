@@ -33,6 +33,9 @@ type UserProfile struct {
 	EducationLevel string    `json:"education_level" db:"education_level"`
 	IsDisabled     bool      `json:"is_disabled" db:"is_disabled"`
 	DisabilityType string    `json:"disability_type" db:"disability_type"`
+	AvatarURL      string    `json:"avatar_url" db:"avatar_url"`
+	Email          string    `json:"email" db:"email"`
+	Phone          string    `json:"phone" db:"phone"`
 	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
 }
 

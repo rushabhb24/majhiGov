@@ -90,8 +90,8 @@ const rankings = computed(() => {
 }
 
 .stat-card {
-  background-color: #ffffff; /* var(--bg) */
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 8px; /* var(--radius) */
   padding: 14px 16px;
   box-sizing: border-box;
@@ -107,10 +107,10 @@ const rankings = computed(() => {
   font-size: 18px;
 }
 
-.stat-icon-box.blue { background-color: #e8eef8; color: #1a3a6b; }
-.stat-icon-box.green { background-color: #f0fdf4; color: #16a34a; }
-.stat-icon-box.orange { background-color: #fff4ed; color: #f97316; }
-.stat-icon-box.red { background-color: #fef2f2; color: #dc2626; }
+.stat-icon-box.blue { background-color: var(--primary-light); color: var(--primary); }
+.stat-icon-box.green { background-color: var(--success-bg); color: var(--success); }
+.stat-icon-box.orange { background-color: var(--accent-light); color: var(--accent); }
+.stat-icon-box.red { background-color: var(--danger-bg); color: var(--danger); }
 
 .stat-icon-box i {
   font-size: 18px !important;
@@ -119,13 +119,13 @@ const rankings = computed(() => {
 .stat-number {
   font-size: 22px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   margin-top: 10px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 2px;
 }
 
@@ -135,13 +135,13 @@ const rankings = computed(() => {
   margin-top: 8px;
 }
 
-.text-success { color: #16a34a; }
+.text-success { color: var(--success); }
 
 .mt-4 { margin-top: 16px; }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
@@ -149,13 +149,13 @@ const rankings = computed(() => {
 
 .card-header {
   padding: 14px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .card-body {
@@ -179,14 +179,14 @@ const rankings = computed(() => {
   font-size: 13px;
   font-weight: 500;
   width: 20px;
-  color: #0f172a;
+  color: var(--text);
   flex-shrink: 0;
 }
 
 .rank-name {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   width: 200px;
   flex-shrink: 0;
   overflow: hidden;
@@ -197,7 +197,7 @@ const rankings = computed(() => {
 .bar-container {
   flex-grow: 1;
   height: 4px;
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -208,11 +208,11 @@ const rankings = computed(() => {
 }
 
 .bar-fill.accent {
-  background-color: #f97316; /* var(--accent) */
+  background-color: var(--accent);
 }
 
 .bar-fill.primary {
-  background-color: #1a3a6b; /* var(--primary) */
+  background-color: var(--primary);
 }
 
 .rank-count {
@@ -220,7 +220,7 @@ const rankings = computed(() => {
   text-align: right;
   font-weight: 500;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text2);
   flex-shrink: 0;
 }
 </style>

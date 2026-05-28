@@ -120,6 +120,7 @@ func runMigrations() error {
 			education_level VARCHAR(100) NOT NULL,
 			is_disabled BOOLEAN DEFAULT FALSE,
 			disability_type VARCHAR(100),
+			avatar_url VARCHAR(500) DEFAULT '',
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,
 
@@ -242,6 +243,7 @@ func runMigrations() error {
 		`ALTER TABLE scheme_documents ADD COLUMN IF NOT EXISTS document_name_mr VARCHAR(255) DEFAULT '';`,
 		`ALTER TABLE scheme_faqs ADD COLUMN IF NOT EXISTS question_mr TEXT DEFAULT '';`,
 		`ALTER TABLE scheme_faqs ADD COLUMN IF NOT EXISTS answer_mr TEXT DEFAULT '';`,
+		`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT '';`,
 
 		// Backfill Marathi translations for Categories
 		`UPDATE scheme_categories SET name_mr = 'शेतकरी' WHERE name = 'Farmers' AND (name_mr = '' OR name_mr IS NULL);`,

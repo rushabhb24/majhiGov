@@ -181,21 +181,21 @@ function handleSchemeChange(e) {
 }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .card-header {
   padding: 14px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .card-body {
@@ -212,7 +212,7 @@ function handleSchemeChange(e) {
 
 .form-label {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .font-medium {
@@ -221,11 +221,11 @@ function handleSchemeChange(e) {
 
 .form-input {
   padding: 8px 10px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border: 0.5px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
@@ -233,7 +233,7 @@ function handleSchemeChange(e) {
 }
 
 .form-input:focus {
-  border-color: #1a3a6b;
+  border-color: var(--primary);
 }
 
 .form-row {
@@ -244,7 +244,7 @@ function handleSchemeChange(e) {
 
 .divider {
   border: none;
-  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-top: 0.5px solid var(--border);
 }
 
 .mt-2 { margin-top: 8px; }
@@ -253,8 +253,8 @@ function handleSchemeChange(e) {
 .mb-4 { margin-bottom: 16px; }
 
 .submit-btn {
-  background-color: #1a3a6b; /* var(--primary) */
-  color: #ffffff;
+  background-color: var(--primary);
+  color: var(--clr-text-light);
   border: none;
   border-radius: 6px;
   padding: 9px 18px;
@@ -285,6 +285,6 @@ function handleSchemeChange(e) {
 .empty-state {
   text-align: center;
   padding: 30px;
-  color: #64748b;
+  color: var(--text2);
 }
 </style>

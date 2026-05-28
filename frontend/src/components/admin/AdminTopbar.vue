@@ -9,6 +9,10 @@ const props = defineProps({
   searchQuery: {
     type: String,
     default: ''
+  },
+  theme: {
+    type: String,
+    default: 'dark'
   }
 })
 
@@ -23,7 +27,8 @@ const pageTitle = computed(() => {
     eligibility: 'Eligibility Rules',
     notifications: 'Notifications',
     analytics: 'Analytics',
-    settings: 'Settings'
+    settings: 'Settings',
+    profile: 'Admin Profile'
   }
   return titles[props.activeTab] || 'Dashboard'
 })
@@ -67,6 +72,11 @@ const isSaveIcon = computed(() => {
         />
       </div>
 
+      <!-- Theme Toggle Button -->
+      <button class="theme-toggle-btn" @click="emit('action-click', 'theme')" :title="theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+        <i class="ti" :class="theme === 'dark' ? 'ti-sun' : 'ti-moon'"></i>
+      </button>
+
       <!-- Bell Button -->
       <button class="bell-btn" @click="emit('action-click', 'bell')">
         <i class="ti ti-bell"></i>
@@ -85,8 +95,8 @@ const isSaveIcon = computed(() => {
 <style scoped>
 .topbar {
   height: 56px;
-  background-color: #ffffff; /* var(--bg) */
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
+  background-color: var(--bg);
+  border-bottom: 0.5px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -98,7 +108,7 @@ const isSaveIcon = computed(() => {
 .page-title {
   font-size: 15px;
   font-weight: 500;
-  color: #0f172a; /* var(--text) */
+  color: var(--text);
 }
 
 .topbar-actions {
@@ -110,9 +120,9 @@ const isSaveIcon = computed(() => {
 .search-bar {
   width: 200px;
   height: 32px;
-  background-color: #f8fafc; /* var(--bg2) */
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
-  border-radius: 6px; /* var(--radius) */
+  background-color: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   padding: 6px 10px;
@@ -121,7 +131,7 @@ const isSaveIcon = computed(() => {
 }
 
 .search-bar i {
-  color: #64748b; /* var(--text2) */
+  color: var(--text2);
   font-size: 15px !important;
   display: inline-flex;
   align-items: center;
@@ -134,22 +144,49 @@ const isSaveIcon = computed(() => {
   outline: none;
   font-family: inherit;
   font-size: 13px;
-  color: #0f172a; /* var(--text) */
+  color: var(--text);
   width: 100%;
   padding: 0;
 }
 
 .search-bar input::placeholder {
-  color: #64748b;
+  color: var(--text2);
+}
+
+.theme-toggle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--bg2);
+  color: var(--text);
+}
+
+.theme-toggle-btn i {
+  font-size: 16px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bell-btn {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
-  background: #ffffff; /* var(--bg) */
-  color: #64748b; /* var(--text2) */
+  border: 0.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,7 +197,8 @@ const isSaveIcon = computed(() => {
 }
 
 .bell-btn:hover {
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
+  color: var(--text);
 }
 
 .bell-btn i {
@@ -170,7 +208,7 @@ const isSaveIcon = computed(() => {
 .bell-dot {
   width: 7px;
   height: 7px;
-  background-color: #f97316; /* var(--accent) */
+  background-color: var(--accent);
   border-radius: 50%;
   position: absolute;
   top: 3px;

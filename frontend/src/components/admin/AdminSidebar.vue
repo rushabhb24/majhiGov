@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 
 defineProps({
@@ -13,11 +14,38 @@ defineProps({
   notificationsCount: {
     type: Number,
     default: 3
+  },
+  theme: {
+    type: String,
+    default: 'dark'
   }
 })
 
 const emit = defineEmits(['update:activeTab'])
 const authStore = useAuthStore()
+
+// Avatar configurations
+const avatarPresets = [
+  { url: 'avatar-dir-blue', bg: '#e8eef8', color: '#1a3a6b', icon: 'ti-user-check' },
+  { url: 'avatar-adm-amber', bg: '#fff4ed', color: '#f97316', icon: 'ti-shield-check' },
+  { url: 'avatar-off-emerald', bg: '#f0fdf4', color: '#16a34a', icon: 'ti-medal' },
+  { url: 'avatar-mgr-rose', bg: '#fef2f2', color: '#dc2626', icon: 'ti-briefcase' },
+  { url: 'avatar-exe-violet', bg: '#faf5ff', color: '#7c3aed', icon: 'ti-award' },
+  { url: 'avatar-sup-teal', bg: '#f0fdfa', color: '#0d9488', icon: 'ti-id' },
+  { url: 'avatar-spe-cyan', bg: '#ecfeff', color: '#0891b2', icon: 'ti-user-plus' },
+  { url: 'avatar-coo-indigo', bg: '#eef2ff', color: '#4f46e5', icon: 'ti-settings' }
+]
+
+const adminProfile = computed(() => authStore.userProfile || {})
+const adminName = computed(() => adminProfile.value.full_name || 'Super Admin')
+const adminInitials = computed(() => {
+  const name = adminName.value
+  return name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'SA'
+})
+const currentPreset = computed(() => {
+  const url = adminProfile.value.avatar_url
+  return avatarPresets.find(p => p.url === url) || null
+})
 
 function selectTab(tab) {
   emit('update:activeTab', tab)
@@ -25,7 +53,7 @@ function selectTab(tab) {
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside :class="['sidebar', theme]">
     <!-- Brand Area (top of sidebar) -->
     <div class="brand-area">
       <div class="logo-box">
@@ -39,6 +67,17 @@ function selectTab(tab) {
 
     <!-- Navigation Menu -->
     <div class="nav-menu">
+      <div class="nav-section-label">PORTAL</div>
+      <div 
+        class="sb-item return-portal-btn" 
+        @click="$router.push('/')"
+        id="nav-return-portal"
+        title="Go back to the Main citizen portal"
+      >
+        <i class="ti ti-arrow-back-up"></i>
+        <span>Return to Portal</span>
+      </div>
+
       <div class="nav-section-label">MAIN</div>
       <div 
         :class="['sb-item', { active: activeTab === 'overview' }]" 
@@ -103,6 +142,14 @@ function selectTab(tab) {
         <span>Analytics</span>
       </div>
       <div 
+        :class="['sb-item', { active: activeTab === 'profile' }]" 
+        @click="selectTab('profile')"
+        id="nav-profile"
+      >
+        <i class="ti ti-user"></i>
+        <span>Admin Profile</span>
+      </div>
+      <div 
         :class="['sb-item', { active: activeTab === 'settings' }]" 
         @click="selectTab('settings')"
         id="nav-settings"
@@ -114,9 +161,25 @@ function selectTab(tab) {
 
     <!-- Footer (bottom of sidebar) -->
     <div class="sidebar-footer">
-      <div class="admin-avatar">SA</div>
+      <div 
+        v-if="currentPreset" 
+        class="admin-avatar"
+        :style="{ backgroundColor: currentPreset.bg, color: currentPreset.color }"
+      >
+        <i class="ti" :class="currentPreset.icon" style="font-size: 14px !important;"></i>
+      </div>
+      <div 
+        v-else-if="adminProfile.avatar_url && adminProfile.avatar_url.startsWith('http')"
+        class="admin-avatar img-avatar"
+        :style="{ backgroundImage: `url(${adminProfile.avatar_url})` }"
+      >
+      </div>
+      <div v-else class="admin-avatar">
+        {{ adminInitials }}
+      </div>
+
       <div class="admin-details">
-        <div class="admin-name">Super Admin</div>
+        <div class="admin-name">{{ adminName }}</div>
         <div class="admin-role">Administrator</div>
       </div>
       <button class="btn-logout" @click="authStore.logoutUser(); $router.push('/admin-dashboard')" title="Exit Dashboard">
@@ -245,6 +308,20 @@ function selectTab(tab) {
   color: #f97316 !important; /* var(--accent) */
 }
 
+.return-portal-btn {
+  border: 0.5px solid rgba(249, 115, 22, 0.2);
+  background-color: rgba(249, 115, 22, 0.05);
+}
+
+.return-portal-btn i {
+  color: #f97316 !important;
+}
+
+.return-portal-btn:hover {
+  background-color: rgba(249, 115, 22, 0.15) !important;
+  color: #fff;
+}
+
 .sb-badge {
   color: #fff;
   font-size: 10px;
@@ -283,6 +360,13 @@ function selectTab(tab) {
   font-weight: 500;
   color: #fff;
   flex-shrink: 0;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-avatar.img-avatar {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .admin-details {
@@ -321,4 +405,92 @@ function selectTab(tab) {
 .btn-logout:hover {
   color: #fff;
 }
+
+/* ======================================================== */
+/* PREMIUM LIGHT SIDEBAR STYLING OVERRIDES                   */
+/* ======================================================== */
+.sidebar.light {
+  background-color: #ffffff;
+  border-right: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+
+.sidebar.light .brand-area {
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+
+.sidebar.light .app-name {
+  color: #0f172a;
+}
+
+.sidebar.light .panel-subtitle {
+  color: #64748b;
+}
+
+.sidebar.light .nav-section-label {
+  color: #94a3b8;
+}
+
+.sidebar.light .sb-item {
+  color: #475569;
+}
+
+.sidebar.light .sb-item i {
+  color: #64748b !important;
+}
+
+.sidebar.light .sb-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #0f172a;
+}
+
+.sidebar.light .sb-item:hover i {
+  color: #0f172a !important;
+}
+
+.sidebar.light .sb-item.active {
+  background-color: rgba(26, 58, 107, 0.06);
+  color: #1a3a6b;
+}
+
+.sidebar.light .sb-item.active i {
+  color: #f97316 !important; /* Keep accent for active icon */
+}
+
+.sidebar.light .return-portal-btn {
+  border: 0.5px solid rgba(249, 115, 22, 0.3);
+  background-color: rgba(249, 115, 22, 0.06);
+}
+
+.sidebar.light .return-portal-btn:hover {
+  background-color: rgba(249, 115, 22, 0.12) !important;
+  color: #ea580c;
+}
+
+.sidebar.light .sidebar-footer {
+  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+.sidebar.light .admin-avatar {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #475569;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+
+.sidebar.light .admin-name {
+  color: #0f172a;
+}
+
+.sidebar.light .admin-role {
+  color: #64748b;
+}
+
+.sidebar.light .btn-logout {
+  color: #64748b;
+}
+
+.sidebar.light .btn-logout:hover {
+  color: #0f172a;
+}
 </style>
+

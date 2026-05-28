@@ -193,8 +193,8 @@ const recentApplications = computed(() => {
 }
 
 .stat-card {
-  background-color: #ffffff; /* var(--bg) */
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 8px; /* var(--radius) */
   padding: 14px 16px;
   box-sizing: border-box;
@@ -214,21 +214,21 @@ const recentApplications = computed(() => {
   font-size: 18px !important;
 }
 
-.stat-icon-box.blue { background-color: #e8eef8; color: #1a3a6b; }
-.stat-icon-box.green { background-color: #f0fdf4; color: #16a34a; }
-.stat-icon-box.orange { background-color: #fff4ed; color: #f97316; }
-.stat-icon-box.red { background-color: #fef2f2; color: #dc2626; }
+.stat-icon-box.blue { background-color: rgba(26, 58, 107, 0.08); color: #1a3a6b; }
+.stat-icon-box.green { background-color: rgba(22, 163, 74, 0.08); color: #16a34a; }
+.stat-icon-box.orange { background-color: rgba(249, 115, 22, 0.08); color: #f97316; }
+.stat-icon-box.red { background-color: rgba(220, 38, 38, 0.08); color: #dc2626; }
 
 .stat-number {
   font-size: 22px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   margin-top: 10px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 2px;
 }
 
@@ -250,7 +250,7 @@ const recentApplications = computed(() => {
 
 /* Warning Alert Banner */
 .warning-alert-banner {
-  background-color: #fffbeb; /* var(--warning-bg) */
+  background-color: var(--warning-bg);
   border: 0.5px solid #fbbf24;
   border-radius: 8px;
   padding: 10px 14px;
@@ -266,7 +266,7 @@ const recentApplications = computed(() => {
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .alert-content i {
@@ -279,7 +279,7 @@ const recentApplications = computed(() => {
   font-weight: 500;
   text-decoration: underline;
   cursor: pointer;
-  color: #1a3a6b;
+  color: var(--primary);
 }
 
 /* Grids */
@@ -293,8 +293,8 @@ const recentApplications = computed(() => {
 .mt-4 { margin-top: 16px; }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px; /* var(--radius-lg) */
   overflow: hidden;
   width: 100%;
@@ -303,7 +303,7 @@ const recentApplications = computed(() => {
 
 .card-header {
   padding: 14px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -313,11 +313,11 @@ const recentApplications = computed(() => {
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .card-header-link {
-  color: #1a3a6b; /* var(--primary) */
+  color: var(--primary);
   font-weight: 500;
   font-size: 13px;
   cursor: pointer;
@@ -347,20 +347,20 @@ const recentApplications = computed(() => {
 }
 
 .overview-table th {
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
   text-align: left;
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
+  color: var(--text2);
   padding: 8px 12px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .overview-table td {
   padding: 10px 12px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
   font-size: 13px;
 }
 
@@ -369,17 +369,17 @@ const recentApplications = computed(() => {
 }
 
 .overview-table tr:hover td {
-  background-color: #f8fafc;
+  background-color: var(--bg2);
 }
 
 .scheme-title {
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .scheme-subtitle {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 1px;
 }
 
@@ -394,10 +394,10 @@ const recentApplications = computed(() => {
   line-height: 1;
 }
 
-.badge.active { background-color: #f0fdf4; color: #16a34a; }
-.badge.expiring { background-color: #fffbeb; color: #d97706; }
-.badge.central { background-color: #e8eef8; color: #1a3a6b; }
-.badge.state { background-color: #fff4ed; color: #f97316; }
+.badge.active { background-color: var(--success-bg); color: #16a34a; }
+.badge.expiring { background-color: var(--warning-bg); color: #d97706; }
+.badge.central { background-color: var(--primary-light); color: var(--primary); }
+.badge.state { background-color: var(--accent-light); color: #f97316; }
 
 /* Category fill list */
 .category-row {
@@ -415,11 +415,11 @@ const recentApplications = computed(() => {
   width: 100px;
   font-weight: 500;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .arrow-indicator {
-  color: #64748b;
+  color: var(--text2);
   font-weight: 400;
   width: 12px;
 }
@@ -427,14 +427,14 @@ const recentApplications = computed(() => {
 .progress-bar-container {
   flex-grow: 1;
   height: 4px;
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background-color: #1a3a6b; /* var(--primary) */
+  background-color: var(--primary);
   border-radius: 2px;
 }
 
@@ -443,7 +443,7 @@ const recentApplications = computed(() => {
   text-align: right;
   font-weight: 500;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 /* Activity Feed */
@@ -456,7 +456,7 @@ const recentApplications = computed(() => {
   display: flex;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
   align-items: flex-start;
   box-sizing: border-box;
 }
@@ -475,7 +475,7 @@ const recentApplications = computed(() => {
 
 .dot-indicator.green { background-color: #16a34a; }
 .dot-indicator.orange { background-color: #d97706; }
-.dot-indicator.blue { background-color: #1a3a6b; }
+.dot-indicator.blue { background-color: var(--primary); }
 
 .activity-content {
   flex-grow: 1;
@@ -483,12 +483,12 @@ const recentApplications = computed(() => {
 
 .activity-text {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .activity-time {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text2);
   margin-top: 2px;
 }
 </style>

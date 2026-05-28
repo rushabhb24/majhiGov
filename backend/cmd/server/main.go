@@ -40,6 +40,7 @@ func main() {
 	mux.Handle("/api/user/saved", middleware.AuthMiddleware(http.HandlerFunc(handlers.SavedSchemesHandler)))
 	mux.Handle("/api/user/apply", middleware.AuthMiddleware(http.HandlerFunc(handlers.ApplySchemeHandler)))
 	mux.Handle("/api/user/applications", middleware.AuthMiddleware(http.HandlerFunc(handlers.GetUserApplicationsHandler)))
+	mux.Handle("/api/translate", middleware.AuthMiddleware(http.HandlerFunc(handlers.TranslateHandler)))
 
 	// Admin-protected routes (JWT validates, then AdminMiddleware verifies is_admin claim)
 	mux.Handle("/api/admin/analytics", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.GetAdminAnalyticsHandler))))

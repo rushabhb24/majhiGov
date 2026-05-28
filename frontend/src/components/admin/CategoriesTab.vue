@@ -134,21 +134,21 @@ const emit = defineEmits(['add-category', 'delete-category'])
 }
 
 .card {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .card-header {
   padding: 14px 16px;
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .card-body {
@@ -165,16 +165,16 @@ const emit = defineEmits(['add-category', 'delete-category'])
 
 .form-label {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .form-input {
   padding: 8px 10px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border: 0.5px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
@@ -182,7 +182,7 @@ const emit = defineEmits(['add-category', 'delete-category'])
 }
 
 .form-input:focus {
-  border-color: #1a3a6b;
+  border-color: var(--primary);
 }
 
 .form-row {
@@ -192,8 +192,8 @@ const emit = defineEmits(['add-category', 'delete-category'])
 }
 
 .submit-btn {
-  background-color: #1a3a6b; /* var(--primary) */
-  color: #ffffff;
+  background-color: var(--primary);
+  color: var(--clr-text-light);
   border: none;
   border-radius: 6px;
   padding: 9px 18px;
@@ -226,7 +226,7 @@ const emit = defineEmits(['add-category', 'delete-category'])
 }
 
 .category-item {
-  background-color: #f8fafc; /* var(--bg2) */
+  background-color: var(--bg2);
   border-radius: 6px; /* var(--radius) */
   padding: 8px 10px;
   display: flex;
@@ -254,13 +254,13 @@ const emit = defineEmits(['add-category', 'delete-category'])
 .cat-name {
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   line-height: 1.3;
 }
 
 .cat-subtitle {
   font-size: 11px;
-  color: #64748b; /* var(--text2) */
+  color: var(--text2);
   margin-top: 1px;
   line-height: 1.2;
 }
@@ -274,9 +274,9 @@ const emit = defineEmits(['add-category', 'delete-category'])
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08); /* var(--border) */
-  background-color: #ffffff;
-  color: #64748b;
+  border: 0.5px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -292,13 +292,13 @@ const emit = defineEmits(['add-category', 'delete-category'])
 }
 
 .action-btn:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg2);
+  color: var(--text);
 }
 
 .action-btn.danger-hover:hover {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #dc2626;
+  background-color: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useAdminStore } from '../stores/admin'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
@@ -16,6 +16,7 @@ import EligibilityTab from '../components/admin/EligibilityTab.vue'
 import NotificationsTab from '../components/admin/NotificationsTab.vue'
 import AnalyticsTab from '../components/admin/AnalyticsTab.vue'
 import SettingsTab from '../components/admin/SettingsTab.vue'
+import ProfileTab from '../components/admin/ProfileTab.vue'
 
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
@@ -24,6 +25,7 @@ const router = useRouter()
 
 // Viewport / active states
 const activeTab = ref('overview')
+const isInitialLoading = ref(true)
 const searchQuery = ref('')
 const filterCategory = ref('All')
 const filterType = ref('All')
@@ -95,6 +97,8 @@ const broadcast = ref({
   type: 'New Scheme Alert'
 })
 
+let refreshInterval = null
+
 // On mount guard and sync load
 onMounted(async () => {
   console.log("AdminView: Component mounted. isLoggedIn:", authStore.isLoggedIn, "isAdmin:", authStore.isAdmin)
@@ -109,8 +113,19 @@ onMounted(async () => {
   try {
     await refreshData()
     console.log("AdminView: Data refresh complete! Schemes loaded:", adminStore.schemes.length)
+    isInitialLoading.value = false
+    
+    // Start active real-time data polling every 10 seconds
+    refreshInterval = setInterval(refreshData, 10000)
   } catch (err) {
     console.error("AdminView: Failed to load data:", err)
+    isInitialLoading.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
   }
 })
 
@@ -172,6 +187,10 @@ function removeFaqRow(index) {
 
 // Topbar dynamic click action dispatcher
 function handleActionClick(actionType) {
+  if (actionType === 'theme') {
+    uiStore.toggleTheme()
+    return
+  }
   if (actionType === 'bell') {
     activeTab.value = 'notifications'
     return
@@ -216,6 +235,106 @@ function handleActionClick(actionType) {
     sendBroadcast()
   } else if (activeTab.value === 'analytics') {
     uiStore.showToast('Operational analytics exported successfully as CSV!', 'success')
+  } else if (activeTab.value === 'profile') {
+    uiStore.showToast('Please fill out the details below and click "Save Administrative Profile" to update.', 'info')
+  }
+}
+
+// Automatic Translation Engine Callers
+async function translateField(text, fieldKey) {
+  if (!text || text.trim() === '') return
+  try {
+    const promises = [
+      fetch(`/api/translate?q=${encodeURIComponent(text)}&target=hi`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json()),
+      fetch(`/api/translate?q=${encodeURIComponent(text)}&target=mr`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json())
+    ]
+    
+    const [hiRes, mrRes] = await Promise.all(promises)
+    
+    if (hiRes.success && hiRes.translatedText) {
+      newScheme.value[fieldKey + '_hi'] = hiRes.translatedText
+    }
+    if (mrRes.success && mrRes.translatedText) {
+      newScheme.value[fieldKey + '_mr'] = mrRes.translatedText
+    }
+  } catch (err) {
+    console.error('Translation failed:', err)
+  }
+}
+
+async function translateDocRow(doc) {
+  if (!doc.document_name || doc.document_name.trim() === '') return
+  try {
+    const promises = [
+      fetch(`/api/translate?q=${encodeURIComponent(doc.document_name)}&target=hi`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json()),
+      fetch(`/api/translate?q=${encodeURIComponent(doc.document_name)}&target=mr`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json())
+    ]
+    
+    const [hiRes, mrRes] = await Promise.all(promises)
+    if (hiRes.success && hiRes.translatedText) {
+      doc.document_name_hi = hiRes.translatedText
+    }
+    if (mrRes.success && mrRes.translatedText) {
+      doc.document_name_mr = mrRes.translatedText
+    }
+  } catch (err) {
+    console.error('Doc translation failed:', err)
+  }
+}
+
+async function translateFaqQuestion(faq) {
+  if (!faq.question || faq.question.trim() === '') return
+  try {
+    const promises = [
+      fetch(`/api/translate?q=${encodeURIComponent(faq.question)}&target=hi`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json()),
+      fetch(`/api/translate?q=${encodeURIComponent(faq.question)}&target=mr`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json())
+    ]
+    
+    const [hiRes, mrRes] = await Promise.all(promises)
+    if (hiRes.success && hiRes.translatedText) {
+      faq.question_hi = hiRes.translatedText
+    }
+    if (mrRes.success && mrRes.translatedText) {
+      faq.question_mr = mrRes.translatedText
+    }
+  } catch (err) {
+    console.error('FAQ question translation failed:', err)
+  }
+}
+
+async function translateFaqAnswer(faq) {
+  if (!faq.answer || faq.answer.trim() === '') return
+  try {
+    const promises = [
+      fetch(`/api/translate?q=${encodeURIComponent(faq.answer)}&target=hi`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json()),
+      fetch(`/api/translate?q=${encodeURIComponent(faq.answer)}&target=mr`, {
+        headers: { 'Authorization': `Bearer ${authStore.token}` }
+      }).then(r => r.json())
+    ]
+    
+    const [hiRes, mrRes] = await Promise.all(promises)
+    if (hiRes.success && hiRes.translatedText) {
+      faq.answer_hi = hiRes.translatedText
+    }
+    if (mrRes.success && mrRes.translatedText) {
+      faq.answer_mr = mrRes.translatedText
+    }
+  } catch (err) {
+    console.error('FAQ answer translation failed:', err)
   }
 }
 
@@ -443,13 +562,14 @@ const filteredUsersList = computed(() => {
 </script>
 
 <template>
-  <div class="admin-dashboard-container">
+  <div :class="['admin-dashboard-container', uiStore.theme]">
     
     <!-- LEFT SIDEBAR PANEL -->
     <AdminSidebar 
       v-model:activeTab="activeTab"
       :schemesCount="schemesCount"
       :notificationsCount="notificationsCount"
+      :theme="uiStore.theme"
     />
 
     <!-- RIGHT MAIN PANEL AREA -->
@@ -460,10 +580,11 @@ const filteredUsersList = computed(() => {
         :activeTab="activeTab"
         v-model:searchQuery="searchQuery"
         @action-click="handleActionClick"
+        :theme="uiStore.theme"
       />
 
       <!-- SCROLLABLE PAGE CONTENT AREA -->
-      <div class="content-area" v-if="!adminStore.loading || activeTab !== 'overview'">
+      <div class="content-area" v-if="!isInitialLoading">
         
         <!-- Tab 1: Overview -->
         <OverviewTab 
@@ -533,6 +654,11 @@ const filteredUsersList = computed(() => {
           @refresh="refreshData"
         />
 
+        <!-- Tab 9: Profile [NEW] -->
+        <ProfileTab 
+          v-else-if="activeTab === 'profile'"
+        />
+
       </div>
 
       <!-- Spinner Loader indicator -->
@@ -557,7 +683,7 @@ const filteredUsersList = computed(() => {
             
             <div class="form-group">
               <label class="form-label">Scheme Title (English) *</label>
-              <input type="text" class="form-input" v-model="newScheme.title" placeholder="e.g. PM Kisan Samman Nidhi" required />
+              <input type="text" class="form-input" v-model="newScheme.title" @blur="translateField(newScheme.title, 'title')" placeholder="e.g. PM Kisan Samman Nidhi" required />
             </div>
 
             <div class="form-row">
@@ -578,7 +704,7 @@ const filteredUsersList = computed(() => {
 
             <div class="form-group">
               <label class="form-label">Description (English) *</label>
-              <textarea class="form-input" v-model="newScheme.description" rows="3" placeholder="Scheme details and statement..." required></textarea>
+              <textarea class="form-input" v-model="newScheme.description" @blur="translateField(newScheme.description, 'description')" rows="3" placeholder="Scheme details and statement..." required></textarea>
             </div>
 
             <div class="form-row">
@@ -652,7 +778,7 @@ const filteredUsersList = computed(() => {
             
             <div style="display:flex; flex-direction:column; gap:8px;" class="mt-2">
               <div v-for="(doc, idx) in newScheme.documents" :key="idx" style="display:flex; align-items:center; gap:8px;">
-                <input type="text" class="form-input" v-model="doc.document_name" placeholder="Aadhaar Card" required />
+                <input type="text" class="form-input" v-model="doc.document_name" @blur="translateDocRow(doc)" placeholder="Aadhaar Card" required />
                 <input type="text" class="form-input" v-model="doc.document_name_hi" placeholder="आधार कार्ड" />
                 <input type="text" class="form-input" v-model="doc.document_name_mr" placeholder="आधार कार्ड" />
                 <select class="form-input" v-model="doc.is_mandatory" style="max-width:110px;">
@@ -677,8 +803,8 @@ const filteredUsersList = computed(() => {
                   <button type="button" class="action-btn danger-hover" @click="removeFaqRow(idx)"><i class="ti ti-trash"></i></button>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:8px;">
-                  <input type="text" class="form-input" v-model="faq.question" placeholder="Question in English" required />
-                  <input type="text" class="form-input" v-model="faq.answer" placeholder="Answer in English" required />
+                  <input type="text" class="form-input" v-model="faq.question" @blur="translateFaqQuestion(faq)" placeholder="Question in English" required />
+                  <input type="text" class="form-input" v-model="faq.answer" @blur="translateFaqAnswer(faq)" placeholder="Answer in English" required />
                   <input type="text" class="form-input" v-model="faq.question_hi" placeholder="प्रश्न (हिंदी)" />
                   <input type="text" class="form-input" v-model="faq.answer_hi" placeholder="उत्तर (हिंदी)" />
                   <input type="text" class="form-input" v-model="faq.question_mr" placeholder="प्रश्न (मराठी)" />
@@ -760,6 +886,21 @@ const filteredUsersList = computed(() => {
   --radius: 8px;
   --radius-lg: 12px;
 }
+
+/* Dark mode variable overrides */
+.admin-dashboard-container.dark {
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f3f4f6;
+  --text2: #9ca3af;
+  --bg: #111827;
+  --bg2: #1f2937;
+  --bg3: #0b0f19;
+  --primary-light: rgba(99, 102, 241, 0.15);
+  --accent-light: rgba(245, 158, 11, 0.15);
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --warning-bg: rgba(245, 158, 11, 0.15);
+}
 </style>
 
 <style scoped>
@@ -771,8 +912,8 @@ const filteredUsersList = computed(() => {
   top: 0;
   left: 0;
   overflow: hidden;
-  background-color: #f1f5f9; /* var(--bg3) */
-  color: #0f172a; /* var(--text) */
+  background-color: var(--bg3);
+  color: var(--text);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
   font-weight: 400;
@@ -787,7 +928,7 @@ const filteredUsersList = computed(() => {
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  background-color: #f1f5f9; /* var(--bg3) */
+  background-color: var(--bg3);
 }
 
 .content-area {
@@ -795,7 +936,7 @@ const filteredUsersList = computed(() => {
   padding: 20px;
   overflow-y: auto;
   box-sizing: border-box;
-  background-color: #f1f5f9; /* var(--bg3) */
+  background-color: var(--bg3);
 }
 
 /* Modals & Overlays */
@@ -819,8 +960,8 @@ const filteredUsersList = computed(() => {
 }
 
 .admin-modal-box {
-  background-color: #ffffff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   width: 100%;
   max-width: 700px;
@@ -883,16 +1024,16 @@ const filteredUsersList = computed(() => {
 
 .form-label {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .form-input {
   padding: 8px 10px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border: 0.5px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
@@ -900,7 +1041,7 @@ const filteredUsersList = computed(() => {
 }
 
 .form-input:focus {
-  border-color: #1a3a6b;
+  border-color: var(--primary);
 }
 
 .form-row {
@@ -926,7 +1067,7 @@ textarea.form-input {
 
 .divider {
   border: none;
-  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-top: 0.5px solid var(--border);
 }
 
 .mt-2 { margin-top: 8px; }
@@ -939,9 +1080,9 @@ textarea.form-input {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
-  background-color: #ffffff;
-  color: #64748b;
+  border: 0.5px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -953,8 +1094,8 @@ textarea.form-input {
 }
 
 .action-btn:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg2);
+  color: var(--text);
 }
 
 .action-btn.danger-hover:hover {
