@@ -1,0 +1,449 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sidebar-w:220px;
+  --header-h:56px;
+  --primary:#1a3a6b;
+  --primary-light:#e8eef8;
+  --accent:#f97316;
+  --accent-light:#fff4ed;
+  --success:#16a34a;
+  --success-bg:#f0fdf4;
+  --danger:#dc2626;
+  --danger-bg:#fef2f2;
+  --warning:#d97706;
+  --warning-bg:#fffbeb;
+  --border:var(--color-border-tertiary);
+  --text:var(--color-text-primary);
+  --text2:var(--color-text-secondary);
+  --bg:var(--color-background-primary);
+  --bg2:var(--color-background-secondary);
+  --bg3:var(--color-background-tertiary);
+}
+body{font-family:var(--font-sans);font-size:14px;color:var(--text)}
+.shell{display:flex;height:620px;border:0.5px solid var(--border);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--bg3)}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--primary);display:flex;flex-direction:column;flex-shrink:0}
+.sb-brand{padding:16px;border-bottom:0.5px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:10px}
+.sb-logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.sb-title{color:#fff;font-size:13px;font-weight:500;line-height:1.3}
+.sb-title span{display:block;color:rgba(255,255,255,0.5);font-size:11px;font-weight:400}
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto}
+.sb-section{color:rgba(255,255,255,0.4);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:12px 8px 6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;color:rgba(255,255,255,0.7);cursor:pointer;transition:all 0.15s;margin-bottom:2px;font-size:13px}
+.sb-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.sb-item.active{background:rgba(255,255,255,0.15);color:#fff}
+.sb-item.active i{color:var(--accent)}
+.sb-item i{font-size:16px;width:18px;text-align:center}
+.sb-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px}
+.sb-footer{padding:12px;border-top:0.5px solid rgba(255,255,255,0.1)}
+.sb-user{display:flex;align-items:center;gap:8px}
+.sb-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500}
+.sb-uname{color:rgba(255,255,255,0.8);font-size:12px}
+.sb-urole{color:rgba(255,255,255,0.4);font-size:11px}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:var(--header-h);border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--bg)}
+.topbar-title{font-size:15px;font-weight:500;flex:1}
+.topbar-search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:6px 10px;width:200px}
+.topbar-search input{border:none;background:transparent;outline:none;font-size:13px;color:var(--text);width:100%}
+.topbar-search i{color:var(--text2);font-size:15px}
+.topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:13px;cursor:pointer;border:0.5px solid var(--border);background:var(--bg);color:var(--text)}
+.topbar-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.topbar-btn i{font-size:15px}
+.notif{position:relative}
+.notif-dot{position:absolute;top:4px;right:14px;width:7px;height:7px;background:var(--accent);border-radius:50%}
+
+.content{flex:1;overflow-y:auto;padding:20px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:0.5px solid var(--border);padding-bottom:0}
+.tab{padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);margin-bottom:-1px}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:500}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--border-radius-md);padding:14px 16px}
+.stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px}
+.stat-icon.blue{background:var(--primary-light);color:var(--primary)}
+.stat-icon.orange{background:var(--accent-light);color:var(--accent)}
+.stat-icon.green{background:var(--success-bg);color:var(--success)}
+.stat-icon.red{background:var(--danger-bg);color:var(--danger)}
+.stat-num{font-size:22px;font-weight:500;color:var(--text);margin-bottom:2px}
+.stat-label{font-size:12px;color:var(--text2)}
+.stat-change{font-size:11px;margin-top:4px}
+.stat-change.up{color:var(--success)}
+.stat-change.down{color:var(--danger)}
+
+/* TWO-COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+
+/* CARD */
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--border-radius-md)}
+.card-header{padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:500}
+.card-body{padding:16px}
+
+/* TABLE */
+.scheme-table{width:100%;border-collapse:collapse;font-size:13px}
+.scheme-table th{text-align:left;font-size:11px;font-weight:500;color:var(--text2);padding:8px 12px;border-bottom:0.5px solid var(--border);background:var(--bg2);text-transform:uppercase;letter-spacing:0.05em}
+.scheme-table td{padding:10px 12px;border-bottom:0.5px solid var(--border);color:var(--text);vertical-align:middle}
+.scheme-table tr:last-child td{border-bottom:none}
+.scheme-table tr:hover td{background:var(--bg2)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500}
+.badge.active{background:var(--success-bg);color:var(--success)}
+.badge.inactive{background:var(--bg2);color:var(--text2)}
+.badge.central{background:var(--primary-light);color:var(--primary)}
+.badge.state{background:var(--accent-light);color:var(--accent)}
+.badge.expiring{background:var(--warning-bg);color:var(--warning)}
+
+/* ACTION BUTTONS */
+.act-btns{display:flex;gap:6px}
+.act-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:0.5px solid var(--border);background:var(--bg);color:var(--text2)}
+.act-btn:hover{background:var(--bg2)}
+.act-btn.danger:hover{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+.act-btn i{font-size:15px}
+
+/* ACTIVITY */
+.activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.act-dot.green{background:var(--success)}
+.act-dot.orange{background:var(--accent)}
+.act-dot.blue{background:var(--primary)}
+.act-info{flex:1}
+.act-text{font-size:13px;color:var(--text)}
+.act-time{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* CATEGORY PILLS */
+.cat-grid{display:flex;flex-direction:column;gap:8px}
+.cat-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg2);border-radius:6px}
+.cat-left{display:flex;align-items:center;gap:10px;font-size:13px}
+.cat-icon{font-size:18px;width:28px;text-align:center}
+.cat-count{font-size:12px;color:var(--text2)}
+.cat-bar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.cat-bar{height:100%;border-radius:2px;background:var(--primary)}
+
+/* ALERT */
+.alert{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--border-radius-md);font-size:13px;margin-bottom:12px}
+.alert.warning{background:var(--warning-bg);color:var(--warning);border:0.5px solid #fbbf24}
+.alert i{font-size:16px}
+
+/* MINI FORM */
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-label{font-size:12px;color:var(--text2);font-weight:500}
+.form-input{padding:8px 10px;border:0.5px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none}
+.form-input:focus{border-color:var(--primary)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.add-btn{background:var(--primary);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:14px;font-weight:500}
+.view-all{font-size:12px;color:var(--primary);cursor:pointer;display:flex;align-items:center;gap:4px}
+
+.page{display:none}
+.page.active{display:block}
+</style>
+
+<h2 class="sr-only">Yojana Portal admin dashboard UI preview with sidebar navigation, stats, scheme table, and activity feed</h2>
+
+<div class="shell">
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo"><i class="ti ti-building-bank" aria-hidden="true"></i></div>
+      <div class="sb-title">Yojana Portal <span>Admin Panel</span></div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-section">Main</div>
+      <div class="sb-item active" onclick="showPage('overview',this)"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Overview</div>
+      <div class="sb-item" onclick="showPage('schemes',this)"><i class="ti ti-files" aria-hidden="true"></i> Schemes <span class="sb-badge">142</span></div>
+      <div class="sb-item" onclick="showPage('categories',this)"><i class="ti ti-grid-dots" aria-hidden="true"></i> Categories</div>
+      <div class="sb-section">Management</div>
+      <div class="sb-item" onclick="showPage('users',this)"><i class="ti ti-users" aria-hidden="true"></i> Users</div>
+      <div class="sb-item" onclick="showPage('eligibility',this)"><i class="ti ti-checklist" aria-hidden="true"></i> Eligibility Rules</div>
+      <div class="sb-item" onclick="showPage('notifications',this)"><i class="ti ti-bell" aria-hidden="true"></i> Notifications <span class="sb-badge">3</span></div>
+      <div class="sb-section">System</div>
+      <div class="sb-item" onclick="showPage('analytics',this)"><i class="ti ti-chart-bar" aria-hidden="true"></i> Analytics</div>
+      <div class="sb-item"><i class="ti ti-settings" aria-hidden="true"></i> Settings</div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar">SA</div>
+        <div><div class="sb-uname">Super Admin</div><div class="sb-urole">Administrator</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Overview</div>
+      <div class="topbar-search">
+        <i class="ti ti-search" aria-hidden="true"></i>
+        <input placeholder="Search schemes, users...">
+      </div>
+      <button class="topbar-btn notif"><i class="ti ti-bell" aria-hidden="true"></i><span class="notif-dot"></span></button>
+      <button class="topbar-btn primary" id="top-action"><i class="ti ti-plus" aria-hidden="true"></i> Add Scheme</button>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW PAGE -->
+      <div class="page active" id="page-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="ti ti-files" aria-hidden="true"></i></div>
+            <div class="stat-num">142</div>
+            <div class="stat-label">Total Schemes</div>
+            <div class="stat-change up"><i class="ti ti-trending-up" aria-hidden="true"></i> +8 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="ti ti-users" aria-hidden="true"></i></div>
+            <div class="stat-num">18,430</div>
+            <div class="stat-label">Registered Users</div>
+            <div class="stat-change up"><i class="ti ti-trending-up" aria-hidden="true"></i> +1,204 this week</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange"><i class="ti ti-grid-dots" aria-hidden="true"></i></div>
+            <div class="stat-num">10</div>
+            <div class="stat-label">Categories</div>
+            <div class="stat-change up"><i class="ti ti-check" aria-hidden="true"></i> All active</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="ti ti-clock" aria-hidden="true"></i></div>
+            <div class="stat-num">7</div>
+            <div class="stat-label">Expiring Soon</div>
+            <div class="stat-change down"><i class="ti ti-alert-circle" aria-hidden="true"></i> Within 30 days</div>
+          </div>
+        </div>
+
+        <div class="alert warning">
+          <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+          7 schemes are expiring within 30 days. Review and update their deadlines.
+          <span style="margin-left:auto;cursor:pointer;text-decoration:underline">View all</span>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recent Schemes Added</div>
+              <span class="view-all">View all <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+            </div>
+            <div class="card-body" style="padding:0">
+              <table class="scheme-table">
+                <thead><tr><th>Scheme</th><th>Type</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td><div style="font-weight:500">PM Kisan Samman</div><div style="font-size:11px;color:var(--text2)">Agriculture</div></td><td><span class="badge central">Central</span></td><td><span class="badge active">Active</span></td></tr>
+                  <tr><td><div style="font-weight:500">NSP Scholarship</div><div style="font-size:11px;color:var(--text2)">Education</div></td><td><span class="badge central">Central</span></td><td><span class="badge active">Active</span></td></tr>
+                  <tr><td><div style="font-weight:500">Ladli Behna Yojana</div><div style="font-size:11px;color:var(--text2)">Women</div></td><td><span class="badge state">State</span></td><td><span class="badge expiring">Expiring</span></td></tr>
+                  <tr><td><div style="font-weight:500">Mudra Loan</div><div style="font-size:11px;color:var(--text2)">Business</div></td><td><span class="badge central">Central</span></td><td><span class="badge active">Active</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">Schemes by Category</div></div>
+            <div class="card-body">
+              <div class="cat-grid">
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">🌾</span> Farmers</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap"><div class="cat-bar" style="width:85%"></div></div><span class="cat-count">34</span></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">🎓</span> Students</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap"><div class="cat-bar" style="width:70%"></div></div><span class="cat-count">28</span></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">👩</span> Women</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap"><div class="cat-bar" style="width:55%"></div></div><span class="cat-count">22</span></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">💼</span> Business</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap"><div class="cat-bar" style="width:45%"></div></div><span class="cat-count">18</span></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">👴</span> Senior Citizens</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap"><div class="cat-bar" style="width:35%"></div></div><span class="cat-count">14</span></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">♿</span> Disabled</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap"><div class="cat-bar" style="width:22%"></div></div><span class="cat-count">9</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Recent Activity</div></div>
+          <div class="card-body">
+            <div class="activity-item"><div class="act-dot green"></div><div class="act-info"><div class="act-text">New scheme <strong>PM Vishwakarma Yojana</strong> added to Business category</div><div class="act-time">2 hours ago</div></div></div>
+            <div class="activity-item"><div class="act-dot orange"></div><div class="act-info"><div class="act-text">Scheme <strong>Ladli Behna</strong> deadline updated to 31 March 2025</div><div class="act-time">5 hours ago</div></div></div>
+            <div class="activity-item"><div class="act-dot blue"></div><div class="act-info"><div class="act-text">User <strong>Ramesh Kumar</strong> registered from Rajasthan</div><div class="act-time">1 day ago</div></div></div>
+            <div class="activity-item"><div class="act-dot green"></div><div class="act-info"><div class="act-text">Category <strong>Senior Citizens</strong> updated with 2 new schemes</div><div class="act-time">2 days ago</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEMES PAGE -->
+      <div class="page" id="page-schemes">
+        <div class="section-header">
+          <div class="section-title">All Schemes (142)</div>
+          <div style="display:flex;gap:8px">
+            <select class="form-input" style="font-size:13px;padding:7px 10px">
+              <option>All Categories</option>
+              <option>Farmers</option><option>Students</option><option>Women</option>
+            </select>
+            <select class="form-input" style="font-size:13px;padding:7px 10px">
+              <option>All Types</option>
+              <option>Central</option><option>State</option>
+            </select>
+            <select class="form-input" style="font-size:13px;padding:7px 10px">
+              <option>All Status</option>
+              <option>Active</option><option>Inactive</option><option>Expiring</option>
+            </select>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <table class="scheme-table">
+              <thead><tr><th>Scheme Name</th><th>Category</th><th>Type</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr><td><div style="font-weight:500">PM Kisan Samman Nidhi</div><div style="font-size:11px;color:var(--text2)">₹6,000/year to farmers</div></td><td>🌾 Farmers</td><td><span class="badge central">Central</span></td><td>Ongoing</td><td><span class="badge active">Active</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></td></tr>
+                <tr><td><div style="font-weight:500">NSP Post-Matric Scholarship</div><div style="font-size:11px;color:var(--text2)">Scholarship for SC/ST students</div></td><td>🎓 Students</td><td><span class="badge central">Central</span></td><td>31 Mar 2025</td><td><span class="badge active">Active</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></td></tr>
+                <tr><td><div style="font-weight:500">Ladli Behna Yojana</div><div style="font-size:11px;color:var(--text2)">₹1,250/month to women</div></td><td>👩 Women</td><td><span class="badge state">State - MP</span></td><td>28 Feb 2025</td><td><span class="badge expiring">Expiring</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></td></tr>
+                <tr><td><div style="font-weight:500">PM Mudra Yojana</div><div style="font-size:11px;color:var(--text2)">Loans up to ₹10 lakh</div></td><td>💼 Business</td><td><span class="badge central">Central</span></td><td>Ongoing</td><td><span class="badge active">Active</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></td></tr>
+                <tr><td><div style="font-weight:500">Indira Gandhi Pension Yojana</div><div style="font-size:11px;color:var(--text2)">Monthly pension for elderly</div></td><td>👴 Senior Citizens</td><td><span class="badge central">Central</span></td><td>Ongoing</td><td><span class="badge inactive">Inactive</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORIES PAGE -->
+      <div class="page" id="page-categories">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Add New Category</div></div>
+            <div class="card-body">
+              <div class="form-row"><label class="form-label">Category Name (English)</label><input class="form-input" placeholder="e.g. Farmers"></div>
+              <div class="form-row-2">
+                <div class="form-row"><label class="form-label">Hindi Name</label><input class="form-input" placeholder="किसान"></div>
+                <div class="form-row"><label class="form-label">Marathi Name</label><input class="form-input" placeholder="शेतकरी"></div>
+              </div>
+              <div class="form-row"><label class="form-label">Icon (Emoji)</label><input class="form-input" placeholder="🌾"></div>
+              <div class="form-row"><label class="form-label">Description</label><input class="form-input" placeholder="Schemes for farmers and agriculture"></div>
+              <button class="add-btn"><i class="ti ti-plus" aria-hidden="true"></i> Add Category</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Existing Categories</div></div>
+            <div class="card-body">
+              <div class="cat-grid">
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">🌾</span><div><div style="font-size:13px">Farmers</div><div style="font-size:11px;color:var(--text2)">किसान · शेतकरी</div></div></div><div class="act-btns"><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">🎓</span><div><div style="font-size:13px">Students</div><div style="font-size:11px;color:var(--text2)">छात्र · विद्यार्थी</div></div></div><div class="act-btns"><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">👩</span><div><div style="font-size:13px">Women</div><div style="font-size:11px;color:var(--text2)">महिला · महिला</div></div></div><div class="act-btns"><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">💼</span><div><div style="font-size:13px">Business Owners</div><div style="font-size:11px;color:var(--text2)">व्यापारी · व्यापारी</div></div></div><div class="act-btns"><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></div>
+                <div class="cat-row"><div class="cat-left"><span class="cat-icon">👴</span><div><div style="font-size:13px">Senior Citizens</div><div style="font-size:11px;color:var(--text2)">वरिष्ठ नागरिक</div></div></div><div class="act-btns"><div class="act-btn"><i class="ti ti-edit" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-trash" aria-hidden="true"></i></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS PAGE -->
+      <div class="page" id="page-users">
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-icon blue"><i class="ti ti-users" aria-hidden="true"></i></div><div class="stat-num">18,430</div><div class="stat-label">Total Users</div></div>
+          <div class="stat-card"><div class="stat-icon green"><i class="ti ti-user-check" aria-hidden="true"></i></div><div class="stat-num">16,204</div><div class="stat-label">Verified</div></div>
+          <div class="stat-card"><div class="stat-icon orange"><i class="ti ti-user-plus" aria-hidden="true"></i></div><div class="stat-num">1,204</div><div class="stat-label">This Week</div></div>
+          <div class="stat-card"><div class="stat-icon red"><i class="ti ti-user-off" aria-hidden="true"></i></div><div class="stat-num">22</div><div class="stat-label">Inactive</div></div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <table class="scheme-table">
+              <thead><tr><th>User</th><th>State</th><th>Occupation</th><th>Registered</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--primary)">RK</div><div><div style="font-weight:500">Ramesh Kumar</div><div style="font-size:11px;color:var(--text2)">ramesh@gmail.com</div></div></div></td><td>Rajasthan</td><td>Farmer</td><td>2 days ago</td><td><span class="badge active">Verified</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-ban" aria-hidden="true"></i></div></div></td></tr>
+                <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--accent)">PS</div><div><div style="font-weight:500">Priya Sharma</div><div style="font-size:11px;color:var(--text2)">priya@gmail.com</div></div></div></td><td>Maharashtra</td><td>Student</td><td>5 days ago</td><td><span class="badge active">Verified</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-ban" aria-hidden="true"></i></div></div></td></tr>
+                <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--success)">AJ</div><div><div style="font-weight:500">Amit Joshi</div><div style="font-size:11px;color:var(--text2)">amit@gmail.com</div></div></div></td><td>UP</td><td>Business</td><td>1 week ago</td><td><span class="badge inactive">Unverified</span></td><td><div class="act-btns"><div class="act-btn"><i class="ti ti-eye" aria-hidden="true"></i></div><div class="act-btn danger"><i class="ti ti-ban" aria-hidden="true"></i></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ELIGIBILITY PAGE -->
+      <div class="page" id="page-eligibility">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Set Eligibility Rules for a Scheme</div></div>
+          <div class="card-body">
+            <div class="form-row"><label class="form-label">Select Scheme</label><select class="form-input"><option>PM Kisan Samman Nidhi</option><option>NSP Scholarship</option></select></div>
+            <div class="form-row-2">
+              <div class="form-row"><label class="form-label">Min Age</label><input class="form-input" type="number" placeholder="18"></div>
+              <div class="form-row"><label class="form-label">Max Age</label><input class="form-input" type="number" placeholder="60 (0 = no limit)"></div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-row"><label class="form-label">Min Annual Income (₹)</label><input class="form-input" type="number" placeholder="0"></div>
+              <div class="form-row"><label class="form-label">Max Annual Income (₹)</label><input class="form-input" type="number" placeholder="200000"></div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-row"><label class="form-label">Gender</label><select class="form-input"><option>All</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+              <div class="form-row"><label class="form-label">Caste Categories</label><select class="form-input"><option>All</option><option>SC</option><option>ST</option><option>OBC</option><option>General</option></select></div>
+            </div>
+            <div class="form-row"><label class="form-label">Applicable States (leave empty = All India)</label><input class="form-input" placeholder="e.g. Maharashtra, Rajasthan, UP"></div>
+            <div class="form-row"><label class="form-label">Occupations</label><input class="form-input" placeholder="e.g. farmer, student, unemployed"></div>
+            <button class="add-btn"><i class="ti ti-device-floppy" aria-hidden="true"></i> Save Eligibility Rules</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS PAGE -->
+      <div class="page" id="page-notifications">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Send Notification</div></div>
+            <div class="card-body">
+              <div class="form-row"><label class="form-label">Send To</label><select class="form-input"><option>All Users</option><option>All Farmers</option><option>All Students</option><option>Specific State</option></select></div>
+              <div class="form-row"><label class="form-label">Title</label><input class="form-input" placeholder="Scheme deadline reminder"></div>
+              <div class="form-row"><label class="form-label">Message</label><textarea class="form-input" rows="4" placeholder="Dear citizen, Ladli Behna Yojana deadline is approaching on 28 Feb..."></textarea></div>
+              <div class="form-row"><label class="form-label">Type</label><select class="form-input"><option>Deadline Reminder</option><option>New Scheme Alert</option><option>System Update</option></select></div>
+              <button class="add-btn"><i class="ti ti-send" aria-hidden="true"></i> Send Notification</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Recent Notifications Sent</div></div>
+            <div class="card-body">
+              <div class="activity-item"><div class="act-dot orange"></div><div class="act-info"><div class="act-text"><strong>Deadline Reminder</strong> — Ladli Behna Yojana</div><div class="act-time">Sent to 4,230 women users · 2 hours ago</div></div></div>
+              <div class="activity-item"><div class="act-dot green"></div><div class="act-info"><div class="act-text"><strong>New Scheme Alert</strong> — PM Vishwakarma Yojana</div><div class="act-time">Sent to 18,430 users · 1 day ago</div></div></div>
+              <div class="activity-item"><div class="act-dot blue"></div><div class="act-info"><div class="act-text"><strong>Deadline Reminder</strong> — NSP Scholarship 2024</div><div class="act-time">Sent to 2,100 student users · 3 days ago</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS PAGE -->
+      <div class="page" id="page-analytics">
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-num">92,430</div><div class="stat-label">Total Eligibility Checks</div><div class="stat-change up">+12% this month</div></div>
+          <div class="stat-card"><div class="stat-num">34,220</div><div class="stat-label">Schemes Saved by Users</div><div class="stat-change up">+8% this month</div></div>
+          <div class="stat-card"><div class="stat-num">PM Kisan</div><div class="stat-label">Most Viewed Scheme</div><div class="stat-change up">14,200 views</div></div>
+          <div class="stat-card"><div class="stat-num">Maharashtra</div><div class="stat-label">Top State by Users</div><div class="stat-change up">3,420 users</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top 5 Most Applied Schemes</div></div>
+          <div class="card-body">
+            <div class="cat-grid">
+              <div class="cat-row"><div class="cat-left"><span style="font-size:13px;font-weight:500;width:20px">1</span> PM Kisan Samman Nidhi</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap" style="width:120px"><div class="cat-bar" style="width:100%;background:var(--accent)"></div></div><span class="cat-count">14,200</span></div></div>
+              <div class="cat-row"><div class="cat-left"><span style="font-size:13px;font-weight:500;width:20px">2</span> NSP Post-Matric Scholarship</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap" style="width:120px"><div class="cat-bar" style="width:78%"></div></div><span class="cat-count">11,080</span></div></div>
+              <div class="cat-row"><div class="cat-left"><span style="font-size:13px;font-weight:500;width:20px">3</span> PM Mudra Yojana</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap" style="width:120px"><div class="cat-bar" style="width:60%"></div></div><span class="cat-count">8,520</span></div></div>
+              <div class="cat-row"><div class="cat-left"><span style="font-size:13px;font-weight:500;width:20px">4</span> Ladli Behna Yojana</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap" style="width:120px"><div class="cat-bar" style="width:48%"></div></div><span class="cat-count">6,840</span></div></div>
+              <div class="cat-row"><div class="cat-left"><span style="font-size:13px;font-weight:500;width:20px">5</span> Ayushman Bharat Yojana</div><div style="display:flex;align-items:center;gap:10px"><div class="cat-bar-wrap" style="width:120px"><div class="cat-bar" style="width:35%"></div></div><span class="cat-count">4,970</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const pages={overview:'Overview',schemes:'Schemes',categories:'Categories',users:'Users',eligibility:'Eligibility Rules',notifications:'Notifications',analytics:'Analytics'};
+const actions={overview:'Add Scheme',schemes:'Add New Scheme',categories:'Add Category',users:'Add Admin',eligibility:'Save Rules',notifications:'Send Notification',analytics:'Export Report'};
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent=pages[id]||id;
+  document.getElementById('top-action').innerHTML=`<i class="ti ti-plus" aria-hidden="true"></i> ${actions[id]||'Add'}`;
+}
+</script>

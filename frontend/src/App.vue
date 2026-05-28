@@ -40,7 +40,8 @@ function handleTabChange(tabName) {
     eligibility: '/eligibility',
     saved: '/saved',
     applications: '/applications',
-    profile: '/profile'
+    profile: '/profile',
+    admin: '/admin/dashboard'
   }
   const path = routeMap[tabName] || '/'
   router.push(path)
@@ -77,6 +78,7 @@ onMounted(() => {
   <div :class="['app-wrapper', { 'rural-mode': uiStore.ruralMode }, uiStore.theme]">
     <!-- Header component (Logo, selects, tabs, togglers) -->
     <Header
+      v-if="!$route.path.startsWith('/admin')"
       :activeTab="$route.name"
       @update:activeTab="handleTabChange"
       :currentLanguage="uiStore.currentLanguage"
@@ -96,7 +98,7 @@ onMounted(() => {
     <main class="main-container">
       
       <!-- Premium Hero Headline banner -->
-      <Hero :t="tObj" @start-check="handleTabChange('eligibility')" />
+      <Hero v-if="!$route.path.startsWith('/admin')" :t="tObj" @start-check="handleTabChange('eligibility')" />
 
       <!-- Router View - renders current route's component -->
       <router-view />

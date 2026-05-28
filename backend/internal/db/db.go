@@ -8,6 +8,7 @@ import (
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 	"yojana-portal/backend/internal/models"
 )
 
@@ -288,9 +289,41 @@ func runMigrations() error {
 }
 
 func seedRelationalData() error {
+	// Seed default Super Admin if not present
+	var adminExists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = 'admin@gov.in')").Scan(&adminExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if admin exists: %v", err)
+	}
+	if !adminExists {
+		log.Println("Seeding default Super Admin user...")
+		hash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash admin password: %v", err)
+		}
+		var adminID int
+		err = DB.QueryRow(`
+			INSERT INTO users (email, phone, password_hash, is_verified, is_admin)
+			VALUES ('admin@gov.in', '9999999999', $1, true, true) RETURNING id`, string(hash)).Scan(&adminID)
+		if err != nil {
+			return fmt.Errorf("failed to insert seeded admin user: %v", err)
+		}
+		_, err = DB.Exec(`
+			INSERT INTO user_profiles (
+				user_id, full_name, date_of_birth, gender, state, district,
+				caste_category, annual_income, occupation, employee_type,
+				education_level, is_disabled
+			) VALUES ($1, 'Super Admin', '1990-01-01', 'Male', 'Maharashtra', 'Mumbai',
+			          'General', 0.00, 'Other', 'Government Employee', 'Graduate', false)`, adminID)
+		if err != nil {
+			return fmt.Errorf("failed to insert seeded admin profile: %v", err)
+		}
+		log.Println("Default Super Admin user (admin@gov.in / admin123) seeded successfully!")
+	}
+
 	// 1. Check if Categories already exist
 	var catCount int
-	err := DB.QueryRow("SELECT COUNT(*) FROM scheme_categories").Scan(&catCount)
+	err = DB.QueryRow("SELECT COUNT(*) FROM scheme_categories").Scan(&catCount)
 	if err != nil {
 		return err
 	}

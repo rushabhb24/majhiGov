@@ -2,6 +2,19 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { API_BASE_URL } from '../config.js'
 
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''))
+    return JSON.parse(jsonPayload)
+  } catch (e) {
+    return null
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   // State
   const token = ref(localStorage.getItem('yojana_auth_token') || null)
@@ -29,6 +42,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => {
+    if (!token.value) return false
+    const claims = parseJwt(token.value)
+    return claims ? !!claims.is_admin : false
+  })
 
   // Actions
   async function registerUser() {
@@ -236,6 +254,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginForm,
     authSubmitting,
     isLoggedIn,
+    isAdmin,
     registerUser,
     loginUser,
     fetchUserProfile,

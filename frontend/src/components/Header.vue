@@ -1,5 +1,8 @@
 <script setup>
 import { ref } from 'vue';
+import { useAuthStore } from '../stores/auth';
+
+const authStore = useAuthStore();
 
 defineProps({
   activeTab: {
@@ -105,6 +108,14 @@ function handleLogout() {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span>{{ t.myProfile || 'Profile' }}</span>
           </div>
+          <div 
+            v-if="user && authStore.isAdmin"
+            :class="['nav-link', { active: activeTab === 'admin' }]" 
+            @click="navigateTo('admin')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+            <span>Admin</span>
+          </div>
         </nav>
 
         <!-- Divider -->
@@ -195,6 +206,10 @@ function handleLogout() {
           <div v-if="user" :class="['mobile-nav-link', { active: activeTab === 'profile' }]" @click="navigateTo('profile')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span>{{ t.myProfile || 'Profile' }}</span>
+          </div>
+          <div v-if="user && authStore.isAdmin" :class="['mobile-nav-link', { active: activeTab === 'admin' }]" @click="navigateTo('admin')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+            <span>Admin Panel</span>
           </div>
 
           <!-- Mobile Settings Section -->

@@ -41,6 +41,17 @@ func main() {
 	mux.Handle("/api/user/apply", middleware.AuthMiddleware(http.HandlerFunc(handlers.ApplySchemeHandler)))
 	mux.Handle("/api/user/applications", middleware.AuthMiddleware(http.HandlerFunc(handlers.GetUserApplicationsHandler)))
 
+	// Admin-protected routes (JWT validates, then AdminMiddleware verifies is_admin claim)
+	mux.Handle("/api/admin/analytics", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.GetAdminAnalyticsHandler))))
+	mux.Handle("/api/admin/schemes", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminSchemesHandler))))
+	mux.Handle("/api/admin/schemes/", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminSchemeDetailsHandler))))
+	mux.Handle("/api/admin/categories", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCategoriesHandler))))
+	mux.Handle("/api/admin/categories/", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCategoryDetailsHandler))))
+	mux.Handle("/api/admin/users", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminUsersHandler))))
+	mux.Handle("/api/admin/users/toggle-active", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminUserToggleHandler))))
+	mux.Handle("/api/admin/users/admin", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCreateHandler))))
+	mux.Handle("/api/admin/notifications", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminNotificationsHandler))))
+
 	// Global middleware chain: Logging → CORS → Routes
 	handler := middleware.LoggingMiddleware(middleware.CorsMiddleware(mux))
 
