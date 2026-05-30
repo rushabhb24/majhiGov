@@ -12,6 +12,7 @@ export const useAdminStore = defineStore('admin', () => {
   const categories = ref([])
   const users = ref([])
   const notifications = ref([])
+  const applications = ref([])
   const loading = ref(false)
   const error = ref(null)
 
@@ -264,6 +265,42 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function fetchAllApplications() {
+    loading.value = true
+    error.value = null
+    try {
+      applications.value = await adminFetch('/api/admin/applications')
+    } catch (err) {
+      console.error(err)
+      error.value = err.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateApplicationStatus(applicationId, status, notes = '') {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await adminFetch('/api/admin/applications/status', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: applicationId,
+          status,
+          notes
+        })
+      })
+      await fetchAllApplications()
+      return result
+    } catch (err) {
+      console.error(err)
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     analytics,
     schemes,
@@ -284,6 +321,9 @@ export const useAdminStore = defineStore('admin', () => {
     toggleUserStatus,
     createAdmin,
     sendNotification,
-    fetchNotifications
+    fetchNotifications,
+    applications,
+    fetchAllApplications,
+    updateApplicationStatus
   }
 })

@@ -1071,3 +1071,128 @@ func getAdminNotifications(w http.ResponseWriter, r *http.Request) {
 
 	writeJSONResponse(w, http.StatusOK, list)
 }
+
+// AdminApplicationsHandler lists all submitted citizen applications
+func AdminApplicationsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	query := `
+		SELECT a.id, a.user_id, p.full_name, u.email, u.phone, 
+		       a.scheme_id, s.title, s.government_level, 
+		       a.status, a.applied_at, a.notes, a.updated_at
+		FROM user_applied_schemes a
+		JOIN users u ON a.user_id = u.id
+		JOIN user_profiles p ON u.id = p.user_id
+		JOIN schemes s ON a.scheme_id = s.id
+		ORDER BY a.applied_at DESC`
+
+	rows, err := db.DB.Query(query)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Database error: "+err.Error())
+		return
+	}
+	defer rows.Close()
+
+	type AdminApplicationResponse struct {
+		ID              int       `json:"id"`
+		UserID          int       `json:"user_id"`
+		FullName        string    `json:"full_name"`
+		Email           string    `json:"email"`
+		Phone           string    `json:"phone"`
+		SchemeID        int       `json:"scheme_id"`
+		SchemeTitle     string    `json:"scheme_title"`
+		GovernmentLevel string    `json:"government_level"`
+		Status          string    `json:"status"`
+		AppliedAt       time.Time `json:"applied_at"`
+		Notes           string    `json:"notes"`
+		UpdatedAt       time.Time `json:"updated_at"`
+	}
+
+	var apps []AdminApplicationResponse = []AdminApplicationResponse{}
+	for rows.Next() {
+		var a AdminApplicationResponse
+		err := rows.Scan(
+			&a.ID, &a.UserID, &a.FullName, &a.Email, &a.Phone,
+			&a.SchemeID, &a.SchemeTitle, &a.GovernmentLevel,
+			&a.Status, &a.AppliedAt, &a.Notes, &a.UpdatedAt,
+		)
+		if err == nil {
+			apps = append(apps, a)
+		}
+	}
+
+	writeJSONResponse(w, http.StatusOK, apps)
+}
+
+// AdminApplicationStatusHandler approves or rejects an application
+func AdminApplicationStatusHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		ApplicationID int    `json:"application_id"`
+		Status        string `json:"status"` // "approved" or "rejected"
+		Notes         string `json:"notes"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil || req.ApplicationID == 0 || (req.Status != "approved" && req.Status != "rejected") {
+		writeJSONError(w, http.StatusBadRequest, "Invalid application payload")
+		return
+	}
+
+	// Verify application exists
+	var exists bool
+	err = db.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM user_applied_schemes WHERE id = $1)", req.ApplicationID).Scan(&exists)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Database error: "+err.Error())
+		return
+	}
+	if !exists {
+		writeJSONError(w, http.StatusNotFound, "Application not found")
+		return
+	}
+
+	// Update status
+	queryUpdate := `
+		UPDATE user_applied_schemes 
+		SET status = $1, notes = $2, updated_at = NOW() 
+		WHERE id = $3`
+	_, err = db.DB.Exec(queryUpdate, req.Status, req.Notes, req.ApplicationID)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to update application status: "+err.Error())
+		return
+	}
+
+	// Fetch user_id and scheme title to insert a notification automatically
+	var userID int
+	var schemeTitle string
+	err = db.DB.QueryRow(`
+		SELECT a.user_id, s.title 
+		FROM user_applied_schemes a 
+		JOIN schemes s ON a.scheme_id = s.id 
+		WHERE a.id = $1`, req.ApplicationID).Scan(&userID, &schemeTitle)
+	if err == nil {
+		notifyTitle := "Application Update"
+		notifyMsg := fmt.Sprintf("Your application for '%s' has been %s by the administrator.", schemeTitle, req.Status)
+		if req.Notes != "" {
+			notifyMsg += fmt.Sprintf(" Remarks: %s", req.Notes)
+		}
+		// Insert user notification
+		_, _ = db.DB.Exec(`
+			INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+			VALUES ($1, $2, $3, 'Application Update', false, NOW())`,
+			userID, notifyTitle, notifyMsg)
+	}
+
+	writeJSONResponse(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Application successfully %s!", req.Status),
+	})
+}
+

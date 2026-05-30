@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useAdminStore } from '../stores/admin'
+import { API_BASE_URL } from '../config.js'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
 import { useRouter } from 'vue-router'
@@ -17,6 +18,7 @@ import NotificationsTab from '../components/admin/NotificationsTab.vue'
 import AnalyticsTab from '../components/admin/AnalyticsTab.vue'
 import SettingsTab from '../components/admin/SettingsTab.vue'
 import ProfileTab from '../components/admin/ProfileTab.vue'
+import ApplicationsTab from '../components/admin/ApplicationsTab.vue'
 
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
@@ -32,6 +34,9 @@ const filterType = ref('All')
 const filterStatus = ref('All')
 const schemesCount = computed(() => adminStore.schemes.length || 142)
 const notificationsCount = computed(() => adminStore.notifications.length || 3)
+const applicationsCount = computed(() => adminStore.applications.length || 0)
+
+const isTranslating = ref(false)
 
 // Modal states
 const schemeModalOpen = ref(false)
@@ -135,7 +140,8 @@ async function refreshData() {
     adminStore.fetchAllSchemes(),
     adminStore.fetchAllCategories(),
     adminStore.fetchAllUsers(),
-    adminStore.fetchNotifications()
+    adminStore.fetchNotifications(),
+    adminStore.fetchAllApplications()
   ])
 
   // Select first scheme for rules configuration if available
@@ -243,12 +249,13 @@ function handleActionClick(actionType) {
 // Automatic Translation Engine Callers
 async function translateField(text, fieldKey) {
   if (!text || text.trim() === '') return
+  isTranslating.value = true
   try {
     const promises = [
-      fetch(`/api/translate?q=${encodeURIComponent(text)}&target=hi`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(text)}&target=hi`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json()),
-      fetch(`/api/translate?q=${encodeURIComponent(text)}&target=mr`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(text)}&target=mr`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json())
     ]
@@ -263,17 +270,20 @@ async function translateField(text, fieldKey) {
     }
   } catch (err) {
     console.error('Translation failed:', err)
+  } finally {
+    isTranslating.value = false
   }
 }
 
 async function translateDocRow(doc) {
   if (!doc.document_name || doc.document_name.trim() === '') return
+  isTranslating.value = true
   try {
     const promises = [
-      fetch(`/api/translate?q=${encodeURIComponent(doc.document_name)}&target=hi`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(doc.document_name)}&target=hi`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json()),
-      fetch(`/api/translate?q=${encodeURIComponent(doc.document_name)}&target=mr`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(doc.document_name)}&target=mr`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json())
     ]
@@ -287,17 +297,20 @@ async function translateDocRow(doc) {
     }
   } catch (err) {
     console.error('Doc translation failed:', err)
+  } finally {
+    isTranslating.value = false
   }
 }
 
 async function translateFaqQuestion(faq) {
   if (!faq.question || faq.question.trim() === '') return
+  isTranslating.value = true
   try {
     const promises = [
-      fetch(`/api/translate?q=${encodeURIComponent(faq.question)}&target=hi`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(faq.question)}&target=hi`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json()),
-      fetch(`/api/translate?q=${encodeURIComponent(faq.question)}&target=mr`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(faq.question)}&target=mr`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json())
     ]
@@ -311,17 +324,20 @@ async function translateFaqQuestion(faq) {
     }
   } catch (err) {
     console.error('FAQ question translation failed:', err)
+  } finally {
+    isTranslating.value = false
   }
 }
 
 async function translateFaqAnswer(faq) {
   if (!faq.answer || faq.answer.trim() === '') return
+  isTranslating.value = true
   try {
     const promises = [
-      fetch(`/api/translate?q=${encodeURIComponent(faq.answer)}&target=hi`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(faq.answer)}&target=hi`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json()),
-      fetch(`/api/translate?q=${encodeURIComponent(faq.answer)}&target=mr`, {
+      fetch(`${API_BASE_URL}/api/translate?q=${encodeURIComponent(faq.answer)}&target=mr`, {
         headers: { 'Authorization': `Bearer ${authStore.token}` }
       }).then(r => r.json())
     ]
@@ -335,6 +351,8 @@ async function translateFaqAnswer(faq) {
     }
   } catch (err) {
     console.error('FAQ answer translation failed:', err)
+  } finally {
+    isTranslating.value = false
   }
 }
 
@@ -434,6 +452,16 @@ async function handleToggleUserVerify(userId) {
     await refreshData()
   } catch (err) {
     uiStore.showToast(err.message, 'danger')
+  }
+}
+
+async function handleUpdateApplicationStatus({ applicationId, status, notes }) {
+  try {
+    const res = await adminStore.updateApplicationStatus(applicationId, status, notes)
+    uiStore.showToast(res.message, 'success')
+    await refreshData()
+  } catch (err) {
+    uiStore.showToast(err.message || 'Failed to update application status.', 'danger')
   }
 }
 
@@ -569,6 +597,7 @@ const filteredUsersList = computed(() => {
       v-model:activeTab="activeTab"
       :schemesCount="schemesCount"
       :notificationsCount="notificationsCount"
+      :applicationsCount="applicationsCount"
       :theme="uiStore.theme"
     />
 
@@ -622,6 +651,14 @@ const filteredUsersList = computed(() => {
           v-else-if="activeTab === 'users'"
           :users="filteredUsersList"
           @toggle-verify="handleToggleUserVerify"
+        />
+
+        <!-- Tab 4b: Applications [NEW] -->
+        <ApplicationsTab 
+          v-else-if="activeTab === 'applications'"
+          :applications="adminStore.applications"
+          :loading="adminStore.loading"
+          @update-status="handleUpdateApplicationStatus"
         />
 
         <!-- Tab 5: Eligibility Rules -->
@@ -678,6 +715,10 @@ const filteredUsersList = computed(() => {
         <div class="modal-title-text">{{ isEditingScheme ? 'Modify Scheme Parameters' : 'Add New Scheme' }}</div>
         
         <div class="modal-scrollable">
+          <div v-if="isTranslating" class="translation-loader-banner">
+            <i class="ti ti-loader rotate-spin"></i>
+            <span>Generating translations into Hindi & Marathi...</span>
+          </div>
           <form @submit.prevent="submitSchemeForm">
             <h4 class="form-sec-title">Scheme Identity Details</h4>
             
@@ -1172,5 +1213,24 @@ textarea.form-input {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.translation-loader-banner {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.rotate-spin {
+  animation: spin 1s linear infinite;
+  display: inline-block;
 }
 </style>

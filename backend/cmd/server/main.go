@@ -52,6 +52,9 @@ func main() {
 	mux.Handle("/api/admin/users/toggle-active", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminUserToggleHandler))))
 	mux.Handle("/api/admin/users/admin", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCreateHandler))))
 	mux.Handle("/api/admin/notifications", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminNotificationsHandler))))
+	mux.Handle("/api/admin/applications", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminApplicationsHandler))))
+	mux.Handle("/api/admin/applications/status", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminApplicationStatusHandler))))
+
 
 	// Global middleware chain: Logging → CORS → Routes
 	handler := middleware.LoggingMiddleware(middleware.CorsMiddleware(mux))

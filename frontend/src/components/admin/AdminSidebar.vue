@@ -15,6 +15,10 @@ defineProps({
     type: Number,
     default: 3
   },
+  applicationsCount: {
+    type: Number,
+    default: 0
+  },
   theme: {
     type: String,
     default: 'dark'
@@ -113,6 +117,15 @@ function selectTab(tab) {
       >
         <i class="ti ti-users"></i>
         <span>Users</span>
+      </div>
+      <div 
+        :class="['sb-item', { active: activeTab === 'applications' }]" 
+        @click="selectTab('applications')"
+        id="nav-applications"
+      >
+        <i class="ti ti-briefcase"></i>
+        <span>Applications</span>
+        <span class="sb-badge bg-accent" v-if="applicationsCount > 0">{{ applicationsCount }}</span>
       </div>
       <div 
         :class="['sb-item', { active: activeTab === 'eligibility' }]" 

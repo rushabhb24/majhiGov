@@ -22,10 +22,10 @@ const stats = computed(() => {
   const pendingApp = sa.pending_applications || 7
 
   return [
-    { num: totalSch, label: 'Total Schemes', desc: '+8 this month', icon: 'ti-files', class: 'blue' },
-    { num: totalUsr.toLocaleString(), label: 'Registered Users', desc: '+1,204 this week', icon: 'ti-users', class: 'green' },
-    { num: totalApp, label: 'Total Applications', desc: 'Real database count', icon: 'ti-checklist', class: 'orange' },
-    { num: pendingApp, label: 'Pending Approvals', desc: 'Awaiting review', icon: 'ti-clock', class: 'red' }
+    { num: totalSch, label: 'Total Schemes', desc: '+8 this month', icon: 'ti-files', class: 'blue', tab: 'schemes' },
+    { num: totalUsr.toLocaleString(), label: 'Registered Users', desc: '+1,204 this week', icon: 'ti-users', class: 'green', tab: 'users' },
+    { num: totalApp, label: 'Total Applications', desc: 'Real database count', icon: 'ti-checklist', class: 'orange', tab: 'applications' },
+    { num: pendingApp, label: 'Pending Approvals', desc: 'Awaiting review', icon: 'ti-clock', class: 'red', tab: 'applications' }
   ]
 })
 
@@ -75,7 +75,7 @@ const recentApplications = computed(() => {
     
     <!-- Stats Row — 4 cards in a grid -->
     <div class="stats-grid">
-      <div class="stat-card" v-for="s in stats" :key="s.label">
+      <div class="stat-card" v-for="s in stats" :key="s.label" @click="emit('nav-tab', s.tab)">
         <div :class="['stat-icon-box', s.class]">
           <i :class="['ti', s.icon]"></i>
         </div>
@@ -198,6 +198,14 @@ const recentApplications = computed(() => {
   border-radius: 8px; /* var(--radius) */
   padding: 14px 16px;
   box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+  border-color: var(--primary);
 }
 
 .stat-icon-box {
