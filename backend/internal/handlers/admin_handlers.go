@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -739,22 +740,31 @@ func AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type UserSummary struct {
-		ID            int       `json:"id"`
-		Email         string    `json:"email"`
-		Phone         string    `json:"phone"`
-		IsVerified    bool      `json:"is_verified"`
-		IsAdmin       bool      `json:"is_admin"`
-		CreatedAt     time.Time `json:"created_at"`
-		FullName      string    `json:"full_name"`
-		State         string    `json:"state"`
-		District      string    `json:"district"`
-		Occupation    string    `json:"occupation"`
-		CasteCategory string    `json:"caste_category"`
+		ID             int       `json:"id"`
+		Email          string    `json:"email"`
+		Phone          string    `json:"phone"`
+		IsVerified     bool      `json:"is_verified"`
+		IsAdmin        bool      `json:"is_admin"`
+		CreatedAt      time.Time `json:"created_at"`
+		FullName       string    `json:"full_name"`
+		DateOfBirth    string    `json:"date_of_birth"`
+		Gender         string    `json:"gender"`
+		State          string    `json:"state"`
+		District       string    `json:"district"`
+		CasteCategory  string    `json:"caste_category"`
+		AnnualIncome   float64   `json:"annual_income"`
+		Occupation     string    `json:"occupation"`
+		EmployeeType   string    `json:"employee_type"`
+		EducationLevel string    `json:"education_level"`
+		IsDisabled     bool      `json:"is_disabled"`
+		Aadhaar        string    `json:"aadhaar"`
 	}
 
 	query := `
 		SELECT u.id, u.email, u.phone, u.is_verified, u.is_admin, u.created_at,
-		       p.full_name, p.state, p.district, p.occupation, p.caste_category
+		       p.full_name, p.date_of_birth, p.gender, p.state, p.district, p.caste_category, 
+		       p.annual_income, p.occupation, p.employee_type, p.education_level, p.is_disabled,
+		       COALESCE(p.aadhaar_encrypted, '')
 		FROM users u
 		JOIN user_profiles p ON u.id = p.user_id
 		ORDER BY u.created_at DESC`
@@ -769,12 +779,21 @@ func AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var users []UserSummary = []UserSummary{}
 	for rows.Next() {
 		var us UserSummary
+		var dob time.Time
+		var aadhaarEncrypted string
 		err := rows.Scan(
 			&us.ID, &us.Email, &us.Phone, &us.IsVerified, &us.IsAdmin, &us.CreatedAt,
-			&us.FullName, &us.State, &us.District, &us.Occupation, &us.CasteCategory,
+			&us.FullName, &dob, &us.Gender, &us.State, &us.District, &us.CasteCategory,
+			&us.AnnualIncome, &us.Occupation, &us.EmployeeType, &us.EducationLevel, &us.IsDisabled,
+			&aadhaarEncrypted,
 		)
 		if err == nil {
+			us.DateOfBirth = dob.Format("2006-01-02")
+			decrypted, _ := db.Decrypt(aadhaarEncrypted)
+			us.Aadhaar = decrypted
 			users = append(users, us)
+		} else {
+			log.Printf("[SCAN ERROR] Scan failed: %v", err)
 		}
 	}
 
@@ -823,6 +842,49 @@ func AdminUserToggleHandler(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": fmt.Sprintf("User status successfully changed to %s!", statusText),
 		"verified": newStatus,
+	})
+}
+
+// AdminUserDeleteHandler securely executes a cascade deletion of the target user record
+func AdminUserDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		UserID int `json:"user_id"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil || req.UserID == 0 {
+		writeJSONError(w, http.StatusBadRequest, "Invalid request body payload")
+		return
+	}
+
+	// Verify user exists
+	var exists bool
+	err = db.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", req.UserID).Scan(&exists)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Database error: "+err.Error())
+		return
+	}
+	if !exists {
+		writeJSONError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	// Delete user (Cascading cascade deletions are automatically executed by standard database references)
+	_, err = db.DB.Exec("DELETE FROM users WHERE id = $1", req.UserID)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to delete user: "+err.Error())
+		return
+	}
+
+	log.Printf("[ADMIN ACTION] Deleted user account ID: %d successfully.", req.UserID)
+
+	writeJSONResponse(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "User account successfully deleted!",
 	})
 }
 
@@ -1082,7 +1144,7 @@ func AdminApplicationsHandler(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT a.id, a.user_id, p.full_name, u.email, u.phone, 
 		       a.scheme_id, s.title, s.government_level, 
-		       a.status, a.applied_at, a.notes, a.updated_at
+		       a.status, a.applied_at, COALESCE(a.notes, ''), a.updated_at, COALESCE(p.aadhaar_encrypted, '')
 		FROM user_applied_schemes a
 		JOIN users u ON a.user_id = u.id
 		JOIN user_profiles p ON u.id = p.user_id
@@ -1109,17 +1171,21 @@ func AdminApplicationsHandler(w http.ResponseWriter, r *http.Request) {
 		AppliedAt       time.Time `json:"applied_at"`
 		Notes           string    `json:"notes"`
 		UpdatedAt       time.Time `json:"updated_at"`
+		Aadhaar         string    `json:"aadhaar"`
 	}
 
 	var apps []AdminApplicationResponse = []AdminApplicationResponse{}
 	for rows.Next() {
 		var a AdminApplicationResponse
+		var aadhaarEncrypted string
 		err := rows.Scan(
 			&a.ID, &a.UserID, &a.FullName, &a.Email, &a.Phone,
 			&a.SchemeID, &a.SchemeTitle, &a.GovernmentLevel,
-			&a.Status, &a.AppliedAt, &a.Notes, &a.UpdatedAt,
+			&a.Status, &a.AppliedAt, &a.Notes, &a.UpdatedAt, &aadhaarEncrypted,
 		)
 		if err == nil {
+			decrypted, _ := db.Decrypt(aadhaarEncrypted)
+			a.Aadhaar = decrypted
 			apps = append(apps, a)
 		}
 	}
@@ -1169,14 +1235,16 @@ func AdminApplicationStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch user_id and scheme title to insert a notification automatically
+	// Fetch user_id, phone, full_name, and scheme title to insert a notification and print SMS log
 	var userID int
-	var schemeTitle string
+	var schemeTitle, phone, fullName string
 	err = db.DB.QueryRow(`
-		SELECT a.user_id, s.title 
+		SELECT a.user_id, s.title, u.phone, p.full_name
 		FROM user_applied_schemes a 
 		JOIN schemes s ON a.scheme_id = s.id 
-		WHERE a.id = $1`, req.ApplicationID).Scan(&userID, &schemeTitle)
+		JOIN users u ON a.user_id = u.id
+		JOIN user_profiles p ON u.id = p.user_id
+		WHERE a.id = $1`, req.ApplicationID).Scan(&userID, &schemeTitle, &phone, &fullName)
 	if err == nil {
 		notifyTitle := "Application Update"
 		notifyMsg := fmt.Sprintf("Your application for '%s' has been %s by the administrator.", schemeTitle, req.Status)
@@ -1188,6 +1256,10 @@ func AdminApplicationStatusHandler(w http.ResponseWriter, r *http.Request) {
 			INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
 			VALUES ($1, $2, $3, 'Application Update', false, NOW())`,
 			userID, notifyTitle, notifyMsg)
+
+		// Simulated production SMS dispatch log
+		log.Printf("[SMS GATEWAY] Sending SMS notification to phone +91 %s: \"Dear %s, your application for '%s' has been %s. Remarks: %s\"", 
+			phone, fullName, schemeTitle, strings.ToUpper(req.Status), req.Notes)
 	}
 
 	writeJSONResponse(w, http.StatusOK, map[string]interface{}{

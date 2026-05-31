@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -453,17 +454,24 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Encrypt sensitive Aadhaar number before storing
+	encryptedAadhaar, err := db.Encrypt(req.Aadhaar)
+	if err != nil {
+		http.Error(w, "Failed to secure Aadhaar number: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// Insert User Profile
 	queryProfile := `
 		INSERT INTO user_profiles (
 			user_id, full_name, date_of_birth, gender, state, district,
 			caste_category, annual_income, occupation, employee_type,
-			education_level, is_disabled
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+			education_level, is_disabled, aadhaar_encrypted
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 	_, err = tx.Exec(
 		queryProfile, userID, req.FullName, req.DateOfBirth, req.Gender, req.State, req.District,
 		req.CasteCategory, req.AnnualIncome, req.Occupation, req.EmployeeType,
-		req.EducationLevel, req.IsDisabled,
+		req.EducationLevel, req.IsDisabled, encryptedAadhaar,
 	)
 	if err != nil {
 		http.Error(w, "Failed to insert user profile: "+err.Error(), http.StatusInternalServerError)
@@ -476,6 +484,8 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to commit user registration: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	UpdateUserActivity(userID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -503,12 +513,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var email, phone, passwordHash string
 	var isAdmin bool
 	var profile models.UserProfile
+	var aadhaarEncrypted string
 
 	query := `
 		SELECT u.id, u.email, u.phone, u.password_hash, u.is_admin,
 		       p.id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
 		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
-		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, '')
+		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), COALESCE(p.aadhaar_encrypted, '')
 		FROM users u
 		JOIN user_profiles p ON u.id = p.user_id
 		WHERE u.email = $1`
@@ -517,7 +528,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		&userID, &email, &phone, &passwordHash, &isAdmin,
 		&profile.ID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
 		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
-		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL,
+		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &aadhaarEncrypted,
 	)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
@@ -532,6 +543,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
+	}
+
+	// Decrypt sensitive Aadhaar number on the fly
+	decryptedAadhaar, err := db.Decrypt(aadhaarEncrypted)
+	if err == nil {
+		profile.Aadhaar = decryptedAadhaar
 	}
 
 	// Issue JWT using middleware's centralized secret
@@ -567,6 +584,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Profile: &profile,
 	}
 
+	UpdateUserActivity(userID)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
@@ -590,13 +609,15 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	UpdateUserActivity(userID)
 
 	// Fetch Profile joined with credentials
 	var profile models.UserProfile
+	var aadhaarEncrypted string
 	query := `
 		SELECT p.id, p.user_id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
 		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
-		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), u.email, u.phone
+		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), u.email, u.phone, COALESCE(p.aadhaar_encrypted, '')
 		FROM user_profiles p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.user_id = $1`
@@ -604,7 +625,7 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 	err = db.DB.QueryRow(query, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
 		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
-		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &profile.Email, &profile.Phone,
+		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &profile.Email, &profile.Phone, &aadhaarEncrypted,
 	)
 	if err == sql.ErrNoRows {
 		http.Error(w, "User profile not found", http.StatusNotFound)
@@ -612,6 +633,12 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		http.Error(w, "Database retrieval error: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// Decrypt Aadhaar number on the fly
+	decryptedAadhaar, err := db.Decrypt(aadhaarEncrypted)
+	if err == nil {
+		profile.Aadhaar = decryptedAadhaar
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -628,6 +655,7 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	UpdateUserActivity(userID)
 
 	var req struct {
 		FullName       string  `json:"full_name"`
@@ -645,6 +673,7 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		Email          string  `json:"email"`
 		Phone          string  `json:"phone"`
 		Password       string  `json:"password"`
+		Aadhaar        string  `json:"aadhaar"`
 	}
 
 	err = json.NewDecoder(r.Body).Decode(&req)
@@ -719,18 +748,25 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Encrypt sensitive Aadhaar number
+	encryptedAadhaar, err := db.Encrypt(req.Aadhaar)
+	if err != nil {
+		http.Error(w, "Failed to secure Aadhaar number: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// 2. Update user profile details
 	queryUpdateProfile := `
 		UPDATE user_profiles SET
 			full_name=$1, date_of_birth=$2, gender=$3, state=$4, district=$5,
 			caste_category=$6, annual_income=$7, occupation=$8, employee_type=$9,
-			education_level=$10, is_disabled=$11, avatar_url=$12, updated_at=NOW()
-		WHERE user_id=$13`
+			education_level=$10, is_disabled=$11, avatar_url=$12, aadhaar_encrypted=$13, updated_at=NOW()
+		WHERE user_id=$14`
 
 	_, err = tx.Exec(queryUpdateProfile,
 		req.FullName, req.DateOfBirth, req.Gender, req.State, req.District,
 		req.CasteCategory, req.AnnualIncome, req.Occupation, req.EmployeeType,
-		req.EducationLevel, req.IsDisabled, req.AvatarURL, userID,
+		req.EducationLevel, req.IsDisabled, req.AvatarURL, encryptedAadhaar, userID,
 	)
 	if err != nil {
 		http.Error(w, "Failed to update profile details: "+err.Error(), http.StatusInternalServerError)
@@ -745,10 +781,11 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch updated profile
 	var profile models.UserProfile
+	var aadhaarEncrypted string
 	queryFetch := `
 		SELECT p.id, p.user_id, p.full_name, p.date_of_birth, p.gender, p.state, p.district,
 		       p.caste_category, p.annual_income, p.occupation, p.employee_type,
-		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), u.email, u.phone
+		       p.education_level, p.is_disabled, COALESCE(p.avatar_url, ''), u.email, u.phone, COALESCE(p.aadhaar_encrypted, '')
 		FROM user_profiles p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.user_id = $1`
@@ -756,11 +793,17 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 	err = db.DB.QueryRow(queryFetch, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.FullName, &profile.DateOfBirth, &profile.Gender, &profile.State, &profile.District,
 		&profile.CasteCategory, &profile.AnnualIncome, &profile.Occupation, &profile.EmployeeType,
-		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &profile.Email, &profile.Phone,
+		&profile.EducationLevel, &profile.IsDisabled, &profile.AvatarURL, &profile.Email, &profile.Phone, &aadhaarEncrypted,
 	)
 	if err != nil {
 		http.Error(w, "Failed to fetch updated profile: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// Decrypt sensitive Aadhaar number on the fly
+	decryptedAadhaar, err := db.Decrypt(aadhaarEncrypted)
+	if err == nil {
+		profile.Aadhaar = decryptedAadhaar
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1060,4 +1103,37 @@ func translateTextViaGoogle(text string, target string) (string, error) {
 	}
 
 	return builder.String(), nil
+}
+
+// UpdateUserActivity updates the last_active_at timestamp for a user asynchronously
+func UpdateUserActivity(userID int) {
+	if userID <= 0 {
+		return
+	}
+	go func() {
+		_, err := db.DB.Exec("UPDATE users SET last_active_at = NOW() WHERE id = $1", userID)
+		if err != nil {
+			log.Printf("[ACTIVITY ERROR] Failed to update last_active_at for user %d: %v", userID, err)
+		}
+	}()
+}
+
+// CleanupInactiveAccounts auto-deletes accounts inactive for 3 months
+func CleanupInactiveAccounts() {
+	log.Println("[CLEANUP] Scanning for inactive user accounts older than 3 months...")
+	res, err := db.DB.Exec(`
+		DELETE FROM users 
+		WHERE is_admin = false 
+		  AND last_active_at < NOW() - INTERVAL '3 months'
+	`)
+	if err != nil {
+		log.Printf("[CLEANUP ERROR] Failed to clean up inactive accounts: %v", err)
+		return
+	}
+	rows, _ := res.RowsAffected()
+	if rows > 0 {
+		log.Printf("[CLEANUP SUCCESS] Successfully auto-deleted %d inactive user accounts older than 3 months.", rows)
+	} else {
+		log.Println("[CLEANUP] No inactive user accounts found to prune.")
+	}
 }

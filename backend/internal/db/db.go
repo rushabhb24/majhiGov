@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -74,7 +75,12 @@ func InitDB() error {
 		return fmt.Errorf("failed to ping %s: %v", dbname, err)
 	}
 
-	log.Printf("Successfully connected to database: %s", dbname)
+	// Configure database connection pooling limits to support high concurrency
+	DB.SetMaxOpenConns(100)
+	DB.SetMaxIdleConns(10)
+	DB.SetConnMaxLifetime(30 * time.Minute)
+
+	log.Printf("Successfully connected to database: %s with connection pooling limits set (MaxOpen: 100, MaxIdle: 10)", dbname)
 
 	// Run Relational Migrations
 	err = runMigrations()
@@ -86,6 +92,18 @@ func InitDB() error {
 	err = seedRelationalData()
 	if err != nil {
 		return fmt.Errorf("failed to seed data: %v", err)
+	}
+
+	// Seed Mock Applications
+	err = seedMockApplications()
+	if err != nil {
+		log.Printf("Warning: Failed to seed mock applications: %v", err)
+	}
+
+	// Seed Mock Government Jobs
+	err = seedMockJobs()
+	if err != nil {
+		log.Printf("Warning: Failed to seed mock government jobs: %v", err)
 	}
 
 	return nil
@@ -101,7 +119,8 @@ func runMigrations() error {
 			password_hash VARCHAR(255) NOT NULL,
 			is_verified BOOLEAN DEFAULT FALSE,
 			is_admin BOOLEAN DEFAULT FALSE,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,
 
 		// 2. User Profiles Table
@@ -121,6 +140,7 @@ func runMigrations() error {
 			is_disabled BOOLEAN DEFAULT FALSE,
 			disability_type VARCHAR(100),
 			avatar_url VARCHAR(500) DEFAULT '',
+			aadhaar_encrypted TEXT DEFAULT '',
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,
 
@@ -244,6 +264,8 @@ func runMigrations() error {
 		`ALTER TABLE scheme_faqs ADD COLUMN IF NOT EXISTS question_mr TEXT DEFAULT '';`,
 		`ALTER TABLE scheme_faqs ADD COLUMN IF NOT EXISTS answer_mr TEXT DEFAULT '';`,
 		`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT '';`,
+		`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS aadhaar_encrypted TEXT DEFAULT '';`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`,
 
 		// Backfill Marathi translations for Categories
 		`UPDATE scheme_categories SET name_mr = 'शेतकरी' WHERE name = 'Farmers' AND (name_mr = '' OR name_mr IS NULL);`,
@@ -277,6 +299,38 @@ func runMigrations() error {
 		`UPDATE scheme_faqs SET question_mr = 'कमाल उत्पन्न मर्यादा काय आहे?', answer_mr = 'सर्व स्रोतांकडून मिळणारे वार्षिक कौटुंबिक उत्पन्न ₹२.५ लाखांपेक्षा जास्त नसावे.' WHERE question = 'What is the maximum income limit?' AND (question_mr = '' OR question_mr IS NULL);`,
 		`UPDATE scheme_faqs SET question_mr = 'सरकारी सेवेत कार्यरत असलेल्या महिला पात्र आहेत का?', answer_mr = 'नाही, ज्या महिलांच्या कुटुंबातील सदस्य आयकर भरतात किंवा सरकारी नोकरीत आहेत त्या महिला या योजनेसाठी पात्र नाहीत.' WHERE question = 'Are working women in government service eligible?' AND (question_mr = '' OR question_mr IS NULL);`,
 		`UPDATE scheme_faqs SET question_mr = 'एपीवाय (APY) मध्ये सामील होण्यासाठी वयोमर्यादा काय आहे?', answer_mr = 'तुम्ही १८ ते ४० वर्षे वयोगटा दरम्यान अटल पेन्शन योजनेमध्ये सामील होऊ शकता.' WHERE question = 'What is the age limit for joining APY?' AND (question_mr = '' OR question_mr IS NULL);`,
+		`CREATE INDEX IF NOT EXISTS idx_user_applied_schemes_user_status ON user_applied_schemes(user_id, status);`,
+		`CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_schemes_cat_active ON schemes(category_id, is_active);`,
+
+		// 12. Government Jobs Table
+		`CREATE TABLE IF NOT EXISTS government_jobs (
+			id SERIAL PRIMARY KEY,
+			title VARCHAR(255) NOT NULL,
+			title_hi VARCHAR(255) NOT NULL,
+			title_mr VARCHAR(255) NOT NULL,
+			organization VARCHAR(255) NOT NULL,
+			organization_hi VARCHAR(255) NOT NULL,
+			organization_mr VARCHAR(255) NOT NULL,
+			description TEXT NOT NULL,
+			description_hi TEXT NOT NULL,
+			description_mr TEXT NOT NULL,
+			education_qualification VARCHAR(255) NOT NULL,
+			documents_required TEXT[] NOT NULL,
+			min_age INTEGER DEFAULT 18,
+			max_age INTEGER DEFAULT 45,
+			last_date DATE NOT NULL,
+			apply_link TEXT NOT NULL,
+			general_fee NUMERIC(15,2) DEFAULT 0.00,
+			obc_fee NUMERIC(15,2) DEFAULT 0.00,
+			sc_st_fee NUMERIC(15,2) DEFAULT 0.00,
+			women_fee NUMERIC(15,2) DEFAULT 0.00,
+			is_active BOOLEAN DEFAULT TRUE,
+			clicks_count INTEGER DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_jobs_active_date ON government_jobs(is_active, last_date);`,
 	}
 
 	for idx, query := range queries {
@@ -627,4 +681,250 @@ func seedRelationalData() error {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func seedMockApplications() error {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM users WHERE is_admin = false").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	log.Println("Seeding mock citizen users and applications...")
+
+	// 1. Get first 3 schemes
+	var schemeIds []int
+	rows, err := DB.Query("SELECT id FROM schemes LIMIT 3")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err == nil {
+			schemeIds = append(schemeIds, id)
+		}
+	}
+
+	if len(schemeIds) == 0 {
+		log.Println("No schemes found to seed applications for. Skipping.")
+		return nil
+	}
+
+	// 2. Create mock citizens
+	mockUsers := []struct {
+		Email      string
+		Phone      string
+		Name       string
+		Occupation string
+		State      string
+		SchemeIdx  int
+		Status     string
+		Notes      string
+		Aadhaar    string
+	}{
+		{"ramesh@gmail.com", "9876543211", "Ramesh Kumar", "Farmer", "Rajasthan", 0, "approved", "Eligible farmer with verified Aadhaar and land record parameters.", "987654321098"},
+		{"priya@gmail.com", "9876543212", "Priya Sharma", "Student", "Maharashtra", 1, "pending", "Undergraduate student applying for Post Matric Scholarship scheme.", "555566667777"},
+		{"amit@gmail.com", "9876543213", "Amit Joshi", "Business", "UP", 2, "rejected", "Business owner applying for subsidy. Annual income exceeds threshold limit.", "444455556666"},
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte("user123"), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	for _, mu := range mockUsers {
+		var uid int
+		// Insert User
+		err = DB.QueryRow(`
+			INSERT INTO users (email, phone, password_hash, is_verified, is_admin)
+			VALUES ($1, $2, $3, true, false)
+			ON CONFLICT (email) DO UPDATE SET email=EXCLUDED.email RETURNING id`,
+			mu.Email, mu.Phone, string(hash)).Scan(&uid)
+		if err != nil {
+			// If already exists, query the ID
+			err = DB.QueryRow("SELECT id FROM users WHERE email = $1", mu.Email).Scan(&uid)
+			if err != nil {
+				continue
+			}
+		}
+
+		// Encrypt mock Aadhaar card
+		aadhaarEncrypted, _ := Encrypt(mu.Aadhaar)
+
+		// Insert Profile
+		var profileExists bool
+		_ = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM user_profiles WHERE user_id = $1)", uid).Scan(&profileExists)
+		if !profileExists {
+			_, _ = DB.Exec(`
+				INSERT INTO user_profiles (
+					user_id, full_name, date_of_birth, gender, state, district,
+					caste_category, annual_income, occupation, employee_type,
+					education_level, is_disabled, aadhaar_encrypted
+				) VALUES ($1, $2, '1995-05-15', 'Male', $3, 'District Office',
+				          'OBC', 120000.00, $4, 'Self-Employed', 'Graduate', false, $5)`,
+				uid, mu.Name, mu.State, mu.Occupation, aadhaarEncrypted)
+		}
+
+		// Map Scheme
+		schemeId := schemeIds[mu.SchemeIdx % len(schemeIds)]
+
+		// Insert Application
+		_, err = DB.Exec(`
+			INSERT INTO user_applied_schemes (user_id, scheme_id, status, notes)
+			VALUES ($1, $2, $3, $4)`,
+			uid, schemeId, mu.Status, mu.Notes)
+		if err != nil {
+			log.Printf("Failed seeding application for %s: %v", mu.Email, err)
+		}
+	}
+
+	log.Println("Mock citizen users and applications successfully seeded!")
+	return nil
+}
+
+// seedMockJobs inserts initial government job advertisements
+func seedMockJobs() error {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM government_jobs").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		log.Println("Database already contains seeded government jobs. Skipping.")
+		return nil
+	}
+
+	log.Println("Seeding mock government jobs...")
+
+	jobs := []struct {
+		Title                  string
+		TitleHi                string
+		TitleMr                string
+		Org                    string
+		OrgHi                  string
+		OrgMr                  string
+		Desc                   string
+		DescHi                 string
+		DescMr                 string
+		EducationQualification string
+		Docs                   []string
+		MinAge                 int
+		MaxAge                 int
+		LastDate               string
+		Link                   string
+		GenFee                 float64
+		ObcFee                 float64
+		ScStFee                float64
+		WomenFee               float64
+	}{
+		{
+			Title: "Civil Services Examination (CSE) 2026",
+			TitleHi: "सिविल सेवा परीक्षा (CSE) 2026",
+			TitleMr: "नागरी सेवा परीक्षा (CSE) 2026",
+			Org: "Union Public Service Commission (UPSC)",
+			OrgHi: "संघ लोक सेवा आयोग (UPSC)",
+			OrgMr: "केंद्रीय लोकसेवा आयोग (UPSC)",
+			Desc: "Apply for IAS, IPS, IFS, and other Group A/B central services posts. Selection through Prelims, Mains, and Personality Test.",
+			DescHi: "आईएएस, आईपीएस, आईएफएस और अन्य ग्रुप ए/बी केंद्रीय सेवा पदों के लिए आवेदन करें। प्रारंभिक, मुख्य और साक्षात्कार के माध्यम से चयन।",
+			DescMr: "IAS, IPS, IFS आणि इतर गट अ/ब केंद्रीय सेवा पदांसाठी अर्ज करा. पूर्व, मुख्य आणि मुलाखतीद्वारे निवड.",
+			EducationQualification: "Graduate",
+			Docs: []string{"Aadhaar Card", "Graduation Degree", "Caste Certificate"},
+			MinAge: 21,
+			MaxAge: 32,
+			LastDate: "2026-07-15",
+			Link: "https://upsconline.nic.in",
+			GenFee: 200.00,
+			ObcFee: 200.00,
+			ScStFee: 0.00,
+			WomenFee: 0.00,
+		},
+		{
+			Title: "Police Sub-Inspector (PSI) Recruitment 2026",
+			TitleHi: "पुलिस सब-इंस्पेक्टर (PSI) भर्ती 2026",
+			TitleMr: "पोलीस उपनिरीक्षक (PSI) भरती २०२६",
+			Org: "Maharashtra Public Service Commission (MPSC)",
+			OrgHi: "महाराष्ट्र लोक सेवा आयोग (MPSC)",
+			OrgMr: "महाराष्ट्र लोकसेवा आयोग (MPSC)",
+			Desc: "Recruitment of Sub-Inspector in Maharashtra Police Department. Physical standards and physical efficiency test applicable.",
+			DescHi: "महाराष्ट्र पुलिस विभाग में सब-इंस्पेक्टर की भर्ती। शारीरिक मानक और शारीरिक दक्षता परीक्षा लागू।",
+			DescMr: "महाराष्ट्र पोलीस विभागात उपनिरीक्षक पदाची भरती. शारीरिक पात्रता आणि मैदानी चाचणी लागू.",
+			EducationQualification: "Graduate",
+			Docs: []string{"Aadhaar Card", "Graduation Degree", "State Domicile Certificate", "Caste Certificate"},
+			MinAge: 19,
+			MaxAge: 31,
+			LastDate: "2026-08-30",
+			Link: "https://mpsc.gov.in",
+			GenFee: 394.00,
+			ObcFee: 294.00,
+			ScStFee: 0.00,
+			WomenFee: 0.00,
+		},
+		{
+			Title: "Assistant Station Master (ASM)",
+			TitleHi: "सहायक स्टेशन मास्टर (ASM)",
+			TitleMr: "सहाय्यक स्टेशन मास्टर (ASM)",
+			Org: "Railway Recruitment Board (RRB)",
+			OrgHi: "रेलवे भर्ती बोर्ड (RRB)",
+			OrgMr: "रेल्वे भरती बोर्ड (RRB)",
+			Desc: "Excellent career opportunity in Indian Railways for station operations, safety, and train signal coordination.",
+			DescHi: "स्टेशन संचालन, सुरक्षा और ट्रेन सिग्नल समन्वय के लिए भारतीय रेलवे में उत्कृष्ट करियर अवसर।",
+			DescMr: "स्टेशन ऑपरेशन्स, सुरक्षा आणि ट्रेन सिग्नल समन्वयासाठी भारतीय रेल्वेमध्ये उत्कृष्ट करिअरची संधी.",
+			EducationQualification: "Graduate",
+			Docs: []string{"Aadhaar Card", "10th Mark Sheet", "Graduation Degree"},
+			MinAge: 18,
+			MaxAge: 33,
+			LastDate: "2026-09-10",
+			Link: "https://www.rrcb.gov.in",
+			GenFee: 500.00,
+			ObcFee: 500.00,
+			ScStFee: 250.00,
+			WomenFee: 250.00,
+		},
+		{
+			Title: "Technical Assistant & Fireman Grade-A",
+			TitleHi: "तकनीकी सहायक और फायरमैन ग्रेड-ए",
+			TitleMr: "तांत्रिक सहाय्यक आणि फायरमन ग्रेड-ए",
+			Org: "Indian Space Research Organisation (ISRO)",
+			OrgHi: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO)",
+			OrgMr: "भारतीय अंतराळ संशोधन संस्था (ISRO)",
+			Desc: "Opportunities for technical diploma and high-school pass holders in specialized research laboratories and launch centers.",
+			DescHi: "विशेष अनुसंधान प्रयोगशालाओं और लॉन्च केंद्रों में तकनीकी डिप्लोमा और हाई-स्कूल पास धारकों के लिए अवसर।",
+			DescMr: "विशेष संशोधन प्रयोगशाळा आणि प्रक्षेपण केंद्रांमध्ये तांत्रिक डिप्लोमा आणि हायस्कूल उत्तीर्ण धारकांसाठी संधी.",
+			EducationQualification: "12th Pass",
+			Docs: []string{"Aadhaar Card", "12th Mark Sheet", "Technical Diploma Certificate"},
+			MinAge: 18,
+			MaxAge: 35,
+			LastDate: "2026-06-25",
+			Link: "https://www.isro.gov.in",
+			GenFee: 250.00,
+			ObcFee: 250.00,
+			ScStFee: 0.00,
+			WomenFee: 0.00,
+		},
+	}
+
+	for _, j := range jobs {
+		query := `
+		INSERT INTO government_jobs (
+			title, title_hi, title_mr, organization, organization_hi, organization_mr,
+			description, description_hi, description_mr, education_qualification, documents_required,
+			min_age, max_age, last_date, apply_link, general_fee, obc_fee, sc_st_fee, women_fee
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`
+
+		_, err = DB.Exec(query,
+			j.Title, j.TitleHi, j.TitleMr, j.Org, j.OrgHi, j.OrgMr,
+			j.Desc, j.DescHi, j.DescMr, j.EducationQualification, pq.StringArray(j.Docs),
+			j.MinAge, j.MaxAge, j.LastDate, j.Link, j.GenFee, j.ObcFee, j.ScStFee, j.WomenFee,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to insert job %s: %v", j.Title, err)
+		}
+	}
+
+	log.Println("Mock government jobs successfully seeded!")
+	return nil
 }
