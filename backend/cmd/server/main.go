@@ -26,18 +26,6 @@ func main() {
 	}
 	defer db.DB.Close()
 
-	// Start background daily cleanup ticker for inactive accounts older than 3 months
-	go func() {
-		time.Sleep(5 * time.Second)
-		handlers.CleanupInactiveAccounts()
-
-		ticker := time.NewTicker(24 * time.Hour)
-		defer ticker.Stop()
-		for range ticker.C {
-			handlers.CleanupInactiveAccounts()
-		}
-	}()
-
 	// Setup Rate Limiters
 	loginLimiter := middleware.NewRateLimiter(5, time.Minute)
 	translateLimiter := middleware.NewRateLimiter(30, time.Minute)
@@ -49,11 +37,11 @@ func main() {
 	// Public routes (no auth required)
 	mux.HandleFunc("/api/schemes", handlers.GetSchemesHandler)
 	mux.HandleFunc("/api/schemes/", handlers.GetSchemeDetailsHandler) // Handles /api/schemes/:id
+	mux.HandleFunc("/api/jobs", handlers.GetJobsHandler)
+	mux.HandleFunc("/api/jobs/", handlers.GetJobDetailsHandler) // Handles /api/jobs/:id
 	mux.Handle("/api/eligibility-check", eligibilityLimiter.Limit(http.HandlerFunc(handlers.CheckEligibilityHandler)))
 	mux.HandleFunc("/api/auth/register", handlers.RegisterHandler)
 	mux.Handle("/api/auth/login", loginLimiter.Limit(http.HandlerFunc(handlers.LoginHandler)))
-	mux.HandleFunc("/api/jobs", handlers.GetJobsHandler)
-	mux.HandleFunc("/api/jobs/", handlers.TrackJobClickHandler) // Handles /api/jobs/:id/click
 
 	// Auth-protected routes (JWT middleware validates token and injects user_id)
 	mux.Handle("/api/user/profile", middleware.AuthMiddleware(http.HandlerFunc(handlers.UserProfileHandler)))
@@ -66,17 +54,16 @@ func main() {
 	mux.Handle("/api/admin/analytics", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.GetAdminAnalyticsHandler))))
 	mux.Handle("/api/admin/schemes", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminSchemesHandler))))
 	mux.Handle("/api/admin/schemes/", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminSchemeDetailsHandler))))
+	mux.Handle("/api/admin/jobs", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminJobsHandler))))
+	mux.Handle("/api/admin/jobs/", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminJobDetailsHandler))))
 	mux.Handle("/api/admin/categories", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCategoriesHandler))))
 	mux.Handle("/api/admin/categories/", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCategoryDetailsHandler))))
 	mux.Handle("/api/admin/users", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminUsersHandler))))
 	mux.Handle("/api/admin/users/toggle-active", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminUserToggleHandler))))
-	mux.Handle("/api/admin/users/delete", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminUserDeleteHandler))))
 	mux.Handle("/api/admin/users/admin", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminCreateHandler))))
 	mux.Handle("/api/admin/notifications", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminNotificationsHandler))))
 	mux.Handle("/api/admin/applications", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminApplicationsHandler))))
 	mux.Handle("/api/admin/applications/status", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminApplicationStatusHandler))))
-	mux.Handle("/api/admin/jobs", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminJobsHandler))))
-	mux.Handle("/api/admin/jobs/", middleware.AuthMiddleware(middleware.AdminMiddleware(http.HandlerFunc(handlers.AdminJobDetailsHandler))))
 
 
 	// Global middleware chain: Logging → CORS → Routes

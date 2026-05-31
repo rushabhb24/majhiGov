@@ -1,11 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { API_BASE_URL } from '../config.js'
-import { useAuthStore } from './auth'
+import { adminApi } from '../api/admin.js'
 
 export const useAdminStore = defineStore('admin', () => {
-  const authStore = useAuthStore()
-
   // State
   const analytics = ref(null)
   const schemes = ref([])
@@ -16,45 +13,12 @@ export const useAdminStore = defineStore('admin', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  // Request helper
-  async function adminFetch(endpoint, options = {}) {
-    if (!authStore.token) {
-      throw new Error('No authentication session found')
-    }
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authStore.token}`,
-      ...(options.headers || {})
-    }
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers
-    })
-
-    if (!response.ok) {
-      const errText = await response.text()
-      let errMsg = 'API request failed'
-      try {
-        const parsed = JSON.parse(errText)
-        errMsg = parsed.error || errMsg
-      } catch (e) {
-        errMsg = errText || errMsg
-      }
-      throw new Error(errMsg)
-    }
-
-    if (response.status === 204) return null
-    return await response.json()
-  }
-
   // Actions
   async function fetchAnalytics() {
     loading.value = true
     error.value = null
     try {
-      analytics.value = await adminFetch('/api/admin/analytics')
+      analytics.value = await adminApi.fetchAnalytics()
     } catch (err) {
       console.error(err)
       error.value = err.message
@@ -67,7 +31,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      schemes.value = await adminFetch('/api/admin/schemes')
+      schemes.value = await adminApi.fetchAllSchemes()
     } catch (err) {
       console.error(err)
       error.value = err.message
@@ -80,10 +44,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch('/api/admin/schemes', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      const result = await adminApi.createScheme(payload)
       await fetchAllSchemes()
       return result
     } catch (err) {
@@ -99,10 +60,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch(`/api/admin/schemes/${schemeId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload)
-      })
+      const result = await adminApi.updateScheme(schemeId, payload)
       await fetchAllSchemes()
       return result
     } catch (err) {
@@ -118,9 +76,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch(`/api/admin/schemes/${schemeId}`, {
-        method: 'DELETE'
-      })
+      const result = await adminApi.toggleSchemeStatus(schemeId)
       await fetchAllSchemes()
       return result
     } catch (err) {
@@ -136,7 +92,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      categories.value = await adminFetch('/api/admin/categories')
+      categories.value = await adminApi.fetchAllCategories()
     } catch (err) {
       console.error(err)
       error.value = err.message
@@ -149,10 +105,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch('/api/admin/categories', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      const result = await adminApi.createCategory(payload)
       await fetchAllCategories()
       return result
     } catch (err) {
@@ -168,9 +121,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch(`/api/admin/categories/${categoryId}`, {
-        method: 'DELETE'
-      })
+      const result = await adminApi.deleteCategory(categoryId)
       await fetchAllCategories()
       return result
     } catch (err) {
@@ -186,7 +137,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      users.value = await adminFetch('/api/admin/users')
+      users.value = await adminApi.fetchAllUsers()
     } catch (err) {
       console.error(err)
       error.value = err.message
@@ -199,10 +150,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch('/api/admin/users/toggle-active', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId })
-      })
+      const result = await adminApi.toggleUserStatus(userId)
       await fetchAllUsers()
       return result
     } catch (err) {
@@ -218,10 +166,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch('/api/admin/users/admin', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      const result = await adminApi.createAdmin(payload)
       await fetchAllUsers()
       return result
     } catch (err) {
@@ -237,10 +182,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch('/api/admin/notifications', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      const result = await adminApi.sendNotification(payload)
       await fetchNotifications()
       return result
     } catch (err) {
@@ -256,7 +198,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      notifications.value = await adminFetch('/api/admin/notifications')
+      notifications.value = await adminApi.fetchNotifications()
     } catch (err) {
       console.error(err)
       error.value = err.message
@@ -269,7 +211,7 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      applications.value = await adminFetch('/api/admin/applications')
+      applications.value = await adminApi.fetchAllApplications()
     } catch (err) {
       console.error(err)
       error.value = err.message
@@ -282,13 +224,10 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await adminFetch('/api/admin/applications/status', {
-        method: 'POST',
-        body: JSON.stringify({
-          application_id: applicationId,
-          status,
-          notes
-        })
+      const result = await adminApi.updateApplicationStatus({
+        application_id: Number(applicationId),
+        status,
+        notes
       })
       await fetchAllApplications()
       return result
@@ -307,6 +246,7 @@ export const useAdminStore = defineStore('admin', () => {
     categories,
     users,
     notifications,
+    applications,
     loading,
     error,
     fetchAnalytics,

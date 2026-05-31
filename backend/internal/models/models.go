@@ -220,36 +220,3 @@ type AuthResponse struct {
 	Profile *UserProfile `json:"profile,omitempty"`
 }
 
-// GovernmentJob represents a government job advertisement with multilingual fields and match parameters
-type GovernmentJob struct {
-	ID                     int            `json:"id" db:"id"`
-	Title                  string         `json:"title" db:"title"`
-	TitleHi                string         `json:"title_hi" db:"title_hi"`
-	TitleMr                string         `json:"title_mr" db:"title_mr"`
-	Organization           string         `json:"organization" db:"organization"`
-	OrganizationHi         string         `json:"organization_hi" db:"organization_hi"`
-	OrganizationMr         string         `json:"organization_mr" db:"organization_mr"`
-	Description            string         `json:"description" db:"description"`
-	DescriptionHi          string         `json:"description_hi" db:"description_hi"`
-	DescriptionMr          string         `json:"description_mr" db:"description_mr"`
-	EducationQualification string         `json:"education_qualification" db:"education_qualification"`
-	DocumentsRequired      pq.StringArray `json:"documents_required" db:"documents_required"`
-	MinAge                 int            `json:"min_age" db:"min_age"`
-	MaxAge                 int            `json:"max_age" db:"max_age"`
-	LastDate               string         `json:"last_date" db:"last_date"` // Will format DATE in scanning
-	ApplyLink              string         `json:"apply_link" db:"apply_link"`
-	GeneralFee             float64        `json:"general_fee" db:"general_fee"`
-	ObcFee                 float64        `json:"obc_fee" db:"obc_fee"`
-	ScStFee                float64        `json:"sc_st_fee" db:"sc_st_fee"`
-	WomenFee               float64        `json:"women_fee" db:"women_fee"`
-	IsActive               bool           `json:"is_active" db:"is_active"`
-	ClicksCount            int            `json:"clicks_count" db:"clicks_count"`
-	CreatedAt              time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt              time.Time      `json:"updated_at" db:"updated_at"`
-
-	// Citizen dynamic calculated match responses
-	MatchScore         int      `json:"match_score"`
-	MatchReasons       []string `json:"match_reasons"`
-	CalculatedFee      float64  `json:"calculated_fee"`
-	FeeConcessionLabel string   `json:"fee_concession_label"`
-}

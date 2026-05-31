@@ -101,7 +101,7 @@ func InitDB() error {
 	}
 
 	// Seed Mock Government Jobs
-	err = seedMockJobs()
+	err = seedGovtJobs()
 	if err != nil {
 		log.Printf("Warning: Failed to seed mock government jobs: %v", err)
 	}
@@ -119,8 +119,7 @@ func runMigrations() error {
 			password_hash VARCHAR(255) NOT NULL,
 			is_verified BOOLEAN DEFAULT FALSE,
 			is_admin BOOLEAN DEFAULT FALSE,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,
 
 		// 2. User Profiles Table
@@ -265,7 +264,6 @@ func runMigrations() error {
 		`ALTER TABLE scheme_faqs ADD COLUMN IF NOT EXISTS answer_mr TEXT DEFAULT '';`,
 		`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT '';`,
 		`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS aadhaar_encrypted TEXT DEFAULT '';`,
-		`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`,
 
 		// Backfill Marathi translations for Categories
 		`UPDATE scheme_categories SET name_mr = 'शेतकरी' WHERE name = 'Farmers' AND (name_mr = '' OR name_mr IS NULL);`,
@@ -302,35 +300,28 @@ func runMigrations() error {
 		`CREATE INDEX IF NOT EXISTS idx_user_applied_schemes_user_status ON user_applied_schemes(user_id, status);`,
 		`CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_schemes_cat_active ON schemes(category_id, is_active);`,
-
-		// 12. Government Jobs Table
-		`CREATE TABLE IF NOT EXISTS government_jobs (
+		`CREATE TABLE IF NOT EXISTS govt_jobs (
 			id SERIAL PRIMARY KEY,
 			title VARCHAR(255) NOT NULL,
-			title_hi VARCHAR(255) NOT NULL,
-			title_mr VARCHAR(255) NOT NULL,
+			title_hi VARCHAR(255) NOT NULL DEFAULT '',
+			title_mr VARCHAR(255) NOT NULL DEFAULT '',
 			organization VARCHAR(255) NOT NULL,
-			organization_hi VARCHAR(255) NOT NULL,
-			organization_mr VARCHAR(255) NOT NULL,
-			description TEXT NOT NULL,
-			description_hi TEXT NOT NULL,
-			description_mr TEXT NOT NULL,
+			department VARCHAR(255) NOT NULL,
+			vacancies INTEGER DEFAULT 0,
 			education_qualification VARCHAR(255) NOT NULL,
-			documents_required TEXT[] NOT NULL,
-			min_age INTEGER DEFAULT 18,
-			max_age INTEGER DEFAULT 45,
-			last_date DATE NOT NULL,
+			experience_required VARCHAR(255) DEFAULT 'None',
+			required_documents TEXT[] NOT NULL,
+			application_start_date DATE NOT NULL,
+			application_end_date DATE NOT NULL,
+			official_website TEXT NOT NULL,
 			apply_link TEXT NOT NULL,
-			general_fee NUMERIC(15,2) DEFAULT 0.00,
-			obc_fee NUMERIC(15,2) DEFAULT 0.00,
-			sc_st_fee NUMERIC(15,2) DEFAULT 0.00,
-			women_fee NUMERIC(15,2) DEFAULT 0.00,
+			application_fee VARCHAR(255) NOT NULL,
 			is_active BOOLEAN DEFAULT TRUE,
-			clicks_count INTEGER DEFAULT 0,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,
-		`CREATE INDEX IF NOT EXISTS idx_jobs_active_date ON government_jobs(is_active, last_date);`,
+		`CREATE INDEX IF NOT EXISTS idx_govt_jobs_active_end ON govt_jobs(is_active, application_end_date);`,
+		`CREATE INDEX IF NOT EXISTS idx_govt_jobs_qualification ON govt_jobs(education_qualification);`,
 	}
 
 	for idx, query := range queries {
@@ -685,7 +676,7 @@ func stringPtr(s string) *string {
 
 func seedMockApplications() error {
 	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM users WHERE is_admin = false").Scan(&count)
+	err := DB.QueryRow("SELECT COUNT(*) FROM user_applied_schemes").Scan(&count)
 	if err != nil {
 		return err
 	}
@@ -724,11 +715,10 @@ func seedMockApplications() error {
 		SchemeIdx  int
 		Status     string
 		Notes      string
-		Aadhaar    string
 	}{
-		{"ramesh@gmail.com", "9876543211", "Ramesh Kumar", "Farmer", "Rajasthan", 0, "approved", "Eligible farmer with verified Aadhaar and land record parameters.", "987654321098"},
-		{"priya@gmail.com", "9876543212", "Priya Sharma", "Student", "Maharashtra", 1, "pending", "Undergraduate student applying for Post Matric Scholarship scheme.", "555566667777"},
-		{"amit@gmail.com", "9876543213", "Amit Joshi", "Business", "UP", 2, "rejected", "Business owner applying for subsidy. Annual income exceeds threshold limit.", "444455556666"},
+		{"ramesh@gmail.com", "9876543211", "Ramesh Kumar", "Farmer", "Rajasthan", 0, "approved", "Eligible farmer with verified Aadhaar and land record parameters."},
+		{"priya@gmail.com", "9876543212", "Priya Sharma", "Student", "Maharashtra", 1, "pending", "Undergraduate student applying for Post Matric Scholarship scheme."},
+		{"amit@gmail.com", "9876543213", "Amit Joshi", "Business", "UP", 2, "rejected", "Business owner applying for subsidy. Annual income exceeds threshold limit."},
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte("user123"), bcrypt.DefaultCost)
@@ -752,9 +742,6 @@ func seedMockApplications() error {
 			}
 		}
 
-		// Encrypt mock Aadhaar card
-		aadhaarEncrypted, _ := Encrypt(mu.Aadhaar)
-
 		// Insert Profile
 		var profileExists bool
 		_ = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM user_profiles WHERE user_id = $1)", uid).Scan(&profileExists)
@@ -763,10 +750,10 @@ func seedMockApplications() error {
 				INSERT INTO user_profiles (
 					user_id, full_name, date_of_birth, gender, state, district,
 					caste_category, annual_income, occupation, employee_type,
-					education_level, is_disabled, aadhaar_encrypted
+					education_level, is_disabled
 				) VALUES ($1, $2, '1995-05-15', 'Male', $3, 'District Office',
-				          'OBC', 120000.00, $4, 'Self-Employed', 'Graduate', false, $5)`,
-				uid, mu.Name, mu.State, mu.Occupation, aadhaarEncrypted)
+				          'OBC', 120000.00, $4, 'Self-Employed', 'Graduate', false)`,
+				uid, mu.Name, mu.State, mu.Occupation)
 		}
 
 		// Map Scheme
@@ -786,15 +773,13 @@ func seedMockApplications() error {
 	return nil
 }
 
-// seedMockJobs inserts initial government job advertisements
-func seedMockJobs() error {
+func seedGovtJobs() error {
 	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM government_jobs").Scan(&count)
+	err := DB.QueryRow("SELECT COUNT(*) FROM govt_jobs").Scan(&count)
 	if err != nil {
 		return err
 	}
 	if count > 0 {
-		log.Println("Database already contains seeded government jobs. Skipping.")
 		return nil
 	}
 
@@ -804,124 +789,80 @@ func seedMockJobs() error {
 		Title                  string
 		TitleHi                string
 		TitleMr                string
-		Org                    string
-		OrgHi                  string
-		OrgMr                  string
-		Desc                   string
-		DescHi                 string
-		DescMr                 string
+		Organization           string
+		Department             string
+		Vacancies              int
 		EducationQualification string
-		Docs                   []string
-		MinAge                 int
-		MaxAge                 int
-		LastDate               string
-		Link                   string
-		GenFee                 float64
-		ObcFee                 float64
-		ScStFee                float64
-		WomenFee               float64
+		ExperienceRequired     string
+		RequiredDocuments      []string
+		DaysEnd                int // Days from now
+		OfficialWebsite        string
+		ApplyLink              string
+		ApplicationFee         string
 	}{
 		{
-			Title: "Civil Services Examination (CSE) 2026",
-			TitleHi: "सिविल सेवा परीक्षा (CSE) 2026",
-			TitleMr: "नागरी सेवा परीक्षा (CSE) 2026",
-			Org: "Union Public Service Commission (UPSC)",
-			OrgHi: "संघ लोक सेवा आयोग (UPSC)",
-			OrgMr: "केंद्रीय लोकसेवा आयोग (UPSC)",
-			Desc: "Apply for IAS, IPS, IFS, and other Group A/B central services posts. Selection through Prelims, Mains, and Personality Test.",
-			DescHi: "आईएएस, आईपीएस, आईएफएस और अन्य ग्रुप ए/बी केंद्रीय सेवा पदों के लिए आवेदन करें। प्रारंभिक, मुख्य और साक्षात्कार के माध्यम से चयन।",
-			DescMr: "IAS, IPS, IFS आणि इतर गट अ/ब केंद्रीय सेवा पदांसाठी अर्ज करा. पूर्व, मुख्य आणि मुलाखतीद्वारे निवड.",
+			Title:                  "MPSC State Service officer (Deputy Collector / DSP)",
+			TitleHi:                "एमपीएससी राज्य सेवा अधिकारी (उप जिलाधीश / डीएसपी)",
+			TitleMr:                "एमपीएससी राज्य सेवा अधिकारी (उपजिल्हाधिकारी / डीएसपी)",
+			Organization:           "Maharashtra Public Service Commission (MPSC)",
+			Department:             "Revenue & Police Administration Department",
+			Vacancies:              450,
 			EducationQualification: "Graduate",
-			Docs: []string{"Aadhaar Card", "Graduation Degree", "Caste Certificate"},
-			MinAge: 21,
-			MaxAge: 32,
-			LastDate: "2026-07-15",
-			Link: "https://upsconline.nic.in",
-			GenFee: 200.00,
-			ObcFee: 200.00,
-			ScStFee: 0.00,
-			WomenFee: 0.00,
+			ExperienceRequired:     "None",
+			RequiredDocuments:      []string{"Aadhaar Card", "Graduation Certificate", "State Domicile Certificate"},
+			DaysEnd:                45,
+			OfficialWebsite:        "https://mpsc.gov.in",
+			ApplyLink:              "https://mpsc.gov.in",
+			ApplicationFee:         "General: ₹394, Reserved: ₹294",
 		},
 		{
-			Title: "Police Sub-Inspector (PSI) Recruitment 2026",
-			TitleHi: "पुलिस सब-इंस्पेक्टर (PSI) भर्ती 2026",
-			TitleMr: "पोलीस उपनिरीक्षक (PSI) भरती २०२६",
-			Org: "Maharashtra Public Service Commission (MPSC)",
-			OrgHi: "महाराष्ट्र लोक सेवा आयोग (MPSC)",
-			OrgMr: "महाराष्ट्र लोकसेवा आयोग (MPSC)",
-			Desc: "Recruitment of Sub-Inspector in Maharashtra Police Department. Physical standards and physical efficiency test applicable.",
-			DescHi: "महाराष्ट्र पुलिस विभाग में सब-इंस्पेक्टर की भर्ती। शारीरिक मानक और शारीरिक दक्षता परीक्षा लागू।",
-			DescMr: "महाराष्ट्र पोलीस विभागात उपनिरीक्षक पदाची भरती. शारीरिक पात्रता आणि मैदानी चाचणी लागू.",
+			Title:                  "RRB Junior Engineer Recruitment 2026",
+			TitleHi:                "आरआरबी जूनियर इंजीनियर भर्ती 2026",
+			TitleMr:                "आरआरबी कनिष्ठ अभियंता भरती २०२६",
+			Organization:           "Railway Recruitment Board (RRB)",
+			Department:             "Technical & Engineering Branch",
+			Vacancies:              1200,
 			EducationQualification: "Graduate",
-			Docs: []string{"Aadhaar Card", "Graduation Degree", "State Domicile Certificate", "Caste Certificate"},
-			MinAge: 19,
-			MaxAge: 31,
-			LastDate: "2026-08-30",
-			Link: "https://mpsc.gov.in",
-			GenFee: 394.00,
-			ObcFee: 294.00,
-			ScStFee: 0.00,
-			WomenFee: 0.00,
+			ExperienceRequired:     "Engineering Degree / Diploma",
+			RequiredDocuments:      []string{"Aadhaar Card", "Graduation Certificate", "Caste Certificate"},
+			DaysEnd:                30,
+			OfficialWebsite:        "https://rrbcdg.gov.in",
+			ApplyLink:              "https://rrbcdg.gov.in",
+			ApplicationFee:         "General: ₹500, Reserved: ₹250",
 		},
 		{
-			Title: "Assistant Station Master (ASM)",
-			TitleHi: "सहायक स्टेशन मास्टर (ASM)",
-			TitleMr: "सहाय्यक स्टेशन मास्टर (ASM)",
-			Org: "Railway Recruitment Board (RRB)",
-			OrgHi: "रेलवे भर्ती बोर्ड (RRB)",
-			OrgMr: "रेल्वे भरती बोर्ड (RRB)",
-			Desc: "Excellent career opportunity in Indian Railways for station operations, safety, and train signal coordination.",
-			DescHi: "स्टेशन संचालन, सुरक्षा और ट्रेन सिग्नल समन्वय के लिए भारतीय रेलवे में उत्कृष्ट करियर अवसर।",
-			DescMr: "स्टेशन ऑपरेशन्स, सुरक्षा आणि ट्रेन सिग्नल समन्वयासाठी भारतीय रेल्वेमध्ये उत्कृष्ट करिअरची संधी.",
-			EducationQualification: "Graduate",
-			Docs: []string{"Aadhaar Card", "10th Mark Sheet", "Graduation Degree"},
-			MinAge: 18,
-			MaxAge: 33,
-			LastDate: "2026-09-10",
-			Link: "https://www.rrcb.gov.in",
-			GenFee: 500.00,
-			ObcFee: 500.00,
-			ScStFee: 250.00,
-			WomenFee: 250.00,
-		},
-		{
-			Title: "Technical Assistant & Fireman Grade-A",
-			TitleHi: "तकनीकी सहायक और फायरमैन ग्रेड-ए",
-			TitleMr: "तांत्रिक सहाय्यक आणि फायरमन ग्रेड-ए",
-			Org: "Indian Space Research Organisation (ISRO)",
-			OrgHi: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO)",
-			OrgMr: "भारतीय अंतराळ संशोधन संस्था (ISRO)",
-			Desc: "Opportunities for technical diploma and high-school pass holders in specialized research laboratories and launch centers.",
-			DescHi: "विशेष अनुसंधान प्रयोगशालाओं और लॉन्च केंद्रों में तकनीकी डिप्लोमा और हाई-स्कूल पास धारकों के लिए अवसर।",
-			DescMr: "विशेष संशोधन प्रयोगशाळा आणि प्रक्षेपण केंद्रांमध्ये तांत्रिक डिप्लोमा आणि हायस्कूल उत्तीर्ण धारकांसाठी संधी.",
-			EducationQualification: "12th Pass",
-			Docs: []string{"Aadhaar Card", "12th Mark Sheet", "Technical Diploma Certificate"},
-			MinAge: 18,
-			MaxAge: 35,
-			LastDate: "2026-06-25",
-			Link: "https://www.isro.gov.in",
-			GenFee: 250.00,
-			ObcFee: 250.00,
-			ScStFee: 0.00,
-			WomenFee: 0.00,
+			Title:                  "India Post Gramin Dak Sevak (GDS) Recruitment",
+			TitleHi:                "भारतीय डाक ग्रामीण डाक सेवक (जीडीएस) भर्ती",
+			TitleMr:                "भारतीय डाक ग्रामीण डाक सेवक (जीडीएस) भरती",
+			Organization:           "India Post",
+			Department:             "Postal Service Operations",
+			Vacancies:              18500,
+			EducationQualification: "10th Pass",
+			ExperienceRequired:     "None",
+			RequiredDocuments:      []string{"Aadhaar Card", "10th Marksheet", "Domicile Certificate"},
+			DaysEnd:                5, // Closes soon alert!
+			OfficialWebsite:        "https://indiapostgdsonline.gov.in",
+			ApplyLink:              "https://indiapostgdsonline.gov.in",
+			ApplicationFee:         "General: ₹100, Reserved: Free",
 		},
 	}
 
 	for _, j := range jobs {
 		query := `
-		INSERT INTO government_jobs (
-			title, title_hi, title_mr, organization, organization_hi, organization_mr,
-			description, description_hi, description_mr, education_qualification, documents_required,
-			min_age, max_age, last_date, apply_link, general_fee, obc_fee, sc_st_fee, women_fee
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`
+			INSERT INTO govt_jobs (
+				title, title_hi, title_mr, organization, department, vacancies,
+				education_qualification, experience_required, required_documents,
+				application_start_date, application_end_date, official_website, apply_link,
+				application_fee, is_active
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE, CURRENT_DATE + $10 * INTERVAL '1 day', $11, $12, $13, true)`
 
 		_, err = DB.Exec(query,
-			j.Title, j.TitleHi, j.TitleMr, j.Org, j.OrgHi, j.OrgMr,
-			j.Desc, j.DescHi, j.DescMr, j.EducationQualification, pq.StringArray(j.Docs),
-			j.MinAge, j.MaxAge, j.LastDate, j.Link, j.GenFee, j.ObcFee, j.ScStFee, j.WomenFee,
+			j.Title, j.TitleHi, j.TitleMr, j.Organization, j.Department, j.Vacancies,
+			j.EducationQualification, j.ExperienceRequired, pq.Array(j.RequiredDocuments),
+			j.DaysEnd, j.OfficialWebsite, j.ApplyLink, j.ApplicationFee,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to insert job %s: %v", j.Title, err)
+			log.Printf("Failed to seed govt job %s: %v", j.Title, err)
 		}
 	}
 

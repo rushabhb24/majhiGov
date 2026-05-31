@@ -27,7 +27,8 @@ function startEditing() {
     occupation: p.occupation || 'Unemployed',
     employee_type: p.employee_type || 'Unemployed',
     education_level: p.education_level || 'Graduate',
-    is_disabled: p.is_disabled || false
+    is_disabled: p.is_disabled || false,
+    aadhaar: p.aadhaar || ''
   }
   isEditing.value = true
 }
@@ -104,6 +105,10 @@ onMounted(() => {
           <div class="profile-field">
             <span class="field-label">{{ t('districtLabel') }}</span>
             <span class="field-value">{{ authStore.userProfile.district }}</span>
+          </div>
+          <div class="profile-field">
+            <span class="field-label">{{ t('aadhaarLabel') }}</span>
+            <span class="field-value">{{ authStore.userProfile.aadhaar || 'Not Provided' }}</span>
           </div>
         </div>
 
@@ -187,6 +192,13 @@ onMounted(() => {
             <div class="form-group">
               <label class="form-label">{{ t('districtLabel') }} *</label>
               <input v-model="editForm.district" type="text" class="form-control" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">{{ t('aadhaarLabel') }} *</label>
+              <input v-model="editForm.aadhaar" type="text" class="form-control" pattern="[0-9]{12}" title="Aadhaar number must be exactly 12 digits" required />
             </div>
           </div>
         </div>

@@ -128,6 +128,14 @@ function selectTab(tab) {
         <span class="sb-badge bg-accent" v-if="applicationsCount > 0">{{ applicationsCount }}</span>
       </div>
       <div 
+        :class="['sb-item', { active: activeTab === 'jobs' }]" 
+        @click="selectTab('jobs')"
+        id="nav-jobs"
+      >
+        <i class="ti ti-id"></i>
+        <span>Manage Jobs</span>
+      </div>
+      <div 
         :class="['sb-item', { active: activeTab === 'eligibility' }]" 
         @click="selectTab('eligibility')"
         id="nav-eligibility"

@@ -19,8 +19,10 @@ import AnalyticsTab from '../components/admin/AnalyticsTab.vue'
 import SettingsTab from '../components/admin/SettingsTab.vue'
 import ProfileTab from '../components/admin/ProfileTab.vue'
 import ApplicationsTab from '../components/admin/ApplicationsTab.vue'
+import JobsTab from '../components/admin/JobsTab.vue'
 
 const adminStore = useAdminStore()
+const jobsTabRef = ref(null)
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const router = useRouter()
@@ -243,6 +245,8 @@ function handleActionClick(actionType) {
     uiStore.showToast('Operational analytics exported successfully as CSV!', 'success')
   } else if (activeTab.value === 'profile') {
     uiStore.showToast('Please fill out the details below and click "Save Administrative Profile" to update.', 'info')
+  } else if (activeTab.value === 'jobs') {
+    jobsTabRef.value?.openCreateModal()
   }
 }
 
@@ -661,6 +665,12 @@ const filteredUsersList = computed(() => {
           @update-status="handleUpdateApplicationStatus"
         />
 
+        <!-- Tab 4c: Manage Jobs [NEW] -->
+        <JobsTab 
+          v-else-if="activeTab === 'jobs'"
+          ref="jobsTabRef"
+        />
+
         <!-- Tab 5: Eligibility Rules -->
         <EligibilityTab 
           v-else-if="activeTab === 'eligibility'"
@@ -928,6 +938,21 @@ const filteredUsersList = computed(() => {
   --radius-lg: 12px;
 }
 
+/* Premium Light mode variable overrides */
+.admin-dashboard-container.light {
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #0f172a;
+  --text2: #475569;
+  --bg: #ffffff;
+  --bg2: #f8fafc;
+  --bg3: #f1f5f9;
+  --primary-light: #e8eef8;
+  --accent-light: #fff4ed;
+  --danger-bg: #fef2f2;
+  --success-bg: #f0fdf4;
+  --warning-bg: #fffbeb;
+}
+
 /* Dark mode variable overrides */
 .admin-dashboard-container.dark {
   --border: rgba(255, 255, 255, 0.08);
@@ -1043,7 +1068,7 @@ const filteredUsersList = computed(() => {
 .modal-title-text {
   font-size: 15px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text);
   margin-bottom: 20px;
   line-height: 1.2;
 }
@@ -1100,7 +1125,7 @@ textarea.form-input {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #1a3a6b;
+  color: var(--primary);
   margin-top: 14px;
   margin-bottom: 12px;
   line-height: 1.3;

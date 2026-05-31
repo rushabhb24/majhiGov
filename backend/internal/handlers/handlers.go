@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -485,8 +484,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	UpdateUserActivity(userID)
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -584,8 +581,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Profile: &profile,
 	}
 
-	UpdateUserActivity(userID)
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
@@ -609,7 +604,6 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	UpdateUserActivity(userID)
 
 	// Fetch Profile joined with credentials
 	var profile models.UserProfile
@@ -655,7 +649,6 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	UpdateUserActivity(userID)
 
 	var req struct {
 		FullName       string  `json:"full_name"`
@@ -1103,37 +1096,4 @@ func translateTextViaGoogle(text string, target string) (string, error) {
 	}
 
 	return builder.String(), nil
-}
-
-// UpdateUserActivity updates the last_active_at timestamp for a user asynchronously
-func UpdateUserActivity(userID int) {
-	if userID <= 0 {
-		return
-	}
-	go func() {
-		_, err := db.DB.Exec("UPDATE users SET last_active_at = NOW() WHERE id = $1", userID)
-		if err != nil {
-			log.Printf("[ACTIVITY ERROR] Failed to update last_active_at for user %d: %v", userID, err)
-		}
-	}()
-}
-
-// CleanupInactiveAccounts auto-deletes accounts inactive for 3 months
-func CleanupInactiveAccounts() {
-	log.Println("[CLEANUP] Scanning for inactive user accounts older than 3 months...")
-	res, err := db.DB.Exec(`
-		DELETE FROM users 
-		WHERE is_admin = false 
-		  AND last_active_at < NOW() - INTERVAL '3 months'
-	`)
-	if err != nil {
-		log.Printf("[CLEANUP ERROR] Failed to clean up inactive accounts: %v", err)
-		return
-	}
-	rows, _ := res.RowsAffected()
-	if rows > 0 {
-		log.Printf("[CLEANUP SUCCESS] Successfully auto-deleted %d inactive user accounts older than 3 months.", rows)
-	} else {
-		log.Println("[CLEANUP] No inactive user accounts found to prune.")
-	}
 }

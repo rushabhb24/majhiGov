@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { API_BASE_URL } from '../config.js'
+import { authApi } from '../api/auth.js'
 
 function parseJwt(token) {
   try {
@@ -35,7 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
     occupation: 'Unemployed',
     employee_type: 'Unemployed',
     education_level: 'Graduate',
-    is_disabled: false
+    is_disabled: false,
+    aadhaar: ''
   })
   const loginForm = ref({ email: '', password: '' })
   const authSubmitting = ref(false)
@@ -69,20 +70,11 @@ export const useAuthStore = defineStore('auth', () => {
         occupation: regForm.value.occupation,
         employee_type: regForm.value.employee_type,
         education_level: regForm.value.education_level,
-        is_disabled: regForm.value.is_disabled
+        is_disabled: regForm.value.is_disabled,
+        aadhaar: regForm.value.aadhaar
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(errText || 'Registration failed')
-      }
-
+      await authApi.register(payload)
       uiStore.showToast('Registration successful! You can now log in.', 'success')
       authTab.value = 'login'
       loginForm.value.email = regForm.value.email
@@ -100,18 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     authSubmitting.value = true
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginForm.value)
-      })
-
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(errText || 'Invalid credentials')
-      }
-
-      const data = await response.json()
+      const data = await authApi.login(loginForm.value)
       if (data.success && data.token) {
         token.value = data.token
         userProfile.value = data.profile
@@ -148,19 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUserProfile() {
     if (!token.value) return
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token.value}` }
-      })
-
-      if (response.status === 401) {
-        logoutUser()
-        return
-      }
-
-      if (!response.ok) throw new Error('Failed to fetch user profile')
-
-      const data = await response.json()
+      const data = await authApi.fetchProfile()
       if (data.success && data.profile) {
         userProfile.value = data.profile
 
@@ -180,8 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err) {
       console.error('Session restoration failed:', err)
-      token.value = null
-      localStorage.removeItem('yojana_auth_token')
+      logoutUser()
     }
   }
 
@@ -190,21 +158,7 @@ export const useAuthStore = defineStore('auth', () => {
     const uiStore = useUiStore()
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token.value}`
-        },
-        body: JSON.stringify(data)
-      })
-
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(errText || 'Failed to update profile')
-      }
-
-      const result = await response.json()
+      const result = await authApi.updateProfile(data)
       if (result.success && result.profile) {
         userProfile.value = result.profile
         uiStore.showToast('Profile updated successfully!', 'success')

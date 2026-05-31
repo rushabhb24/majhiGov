@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { API_BASE_URL } from '../config.js'
+import { applicationsApi } from '../api/applications.js'
 
 export const useApplicationStore = defineStore('applications', () => {
   // State
@@ -18,14 +18,8 @@ export const useApplicationStore = defineStore('applications', () => {
     if (!authStore.token) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/applications`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${authStore.token}` }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        applications.value = data || []
-      }
+      const data = await applicationsApi.fetchUserApplications()
+      applications.value = data || []
     } catch (err) {
       console.error('Failed to fetch user applications:', err)
     }
@@ -43,8 +37,6 @@ export const useApplicationStore = defineStore('applications', () => {
   /**
    * Apply via official link:
    * Records the application in the backend database.
-   * Note: The caller (App.vue handleApplyAction) opens the official URL synchronously
-   * before calling this function to avoid popup blockers.
    */
   async function applyViaOfficialLink(scheme) {
     const { useAuthStore } = await import('./auth.js')
@@ -54,7 +46,6 @@ export const useApplicationStore = defineStore('applications', () => {
 
     if (!authStore.token) return
 
-    // 2. Record the application in the background (non-blocking)
     applySubmitting.value = true
     try {
       const payload = {
@@ -62,28 +53,15 @@ export const useApplicationStore = defineStore('applications', () => {
         notes: 'Applied via official portal link'
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/user/apply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.token}`
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.ok) {
-        uiStore.showToast('Application recorded! Track your status in My Applications.', 'success')
-        fetchApplications()
-      } else {
-        const errData = await response.text()
-        if (response.status === 409 || errData.includes('already')) {
-          uiStore.showToast('You already applied for this scheme. Opening official portal...', 'info')
-        } else {
-          console.error('Failed to record application:', errData)
-        }
-      }
+      await applicationsApi.applyForScheme(payload)
+      uiStore.showToast('Application recorded! Track your status in My Applications.', 'success')
+      await fetchApplications()
     } catch (err) {
-      console.error('Error recording application:', err)
+      if (err.message.includes('already')) {
+        uiStore.showToast('You already applied for this scheme. Opening official portal...', 'info')
+      } else {
+        console.error('Error recording application:', err)
+      }
     } finally {
       applySubmitting.value = false
     }
@@ -105,13 +83,15 @@ export const useApplicationStore = defineStore('applications', () => {
     applyNotes.value = ''
   }
 
-  async function submitApplication() {
+  async function submitApplyForm() {
+    if (!applyingScheme.value) return
+
     const { useAuthStore } = await import('./auth.js')
     const authStore = useAuthStore()
     const { useUiStore } = await import('./ui.js')
     const uiStore = useUiStore()
 
-    if (!authStore.token || !applyingScheme.value) return
+    if (!authStore.token) return
 
     applySubmitting.value = true
     try {
@@ -120,49 +100,29 @@ export const useApplicationStore = defineStore('applications', () => {
         notes: applyNotes.value
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/user/apply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.token}`
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.status === 409) {
-        uiStore.showToast(uiStore.currentLanguage === 'mr' ? 'या योजनेसाठी तुमचा एक अर्ज आधीच प्रलंबित आहे.' : (uiStore.currentLanguage === 'hi' ? 'इस योजना के लिए आपका एक सक्रिय आवेदन पहले से ही प्रक्रिया में है।' : 'You already have an active pending application for this scheme.'), 'warning')
-        closeApplyModal()
-        return
-      }
-
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(errText || 'Failed to submit application')
-      }
-
-      uiStore.showToast(uiStore.currentLanguage === 'mr' ? 'अर्ज यशस्वीरित्या सादर केला गेला!' : (uiStore.currentLanguage === 'hi' ? 'आवेदन सफलतापूर्वक जमा किया गया!' : 'Application submitted successfully!'), 'success')
+      await applicationsApi.applyForScheme(payload)
+      uiStore.showToast('Application submitted successfully!', 'success')
       closeApplyModal()
-
+      
+      // Redirect or track status
       await fetchApplications()
-
-      const router = (await import('../router/index.js')).default
-      router.push('/applications')
+      
+      // Delay open redirect
+      if (applyingScheme.value.apply_link) {
+        setTimeout(() => {
+          window.open(applyingScheme.value.apply_link, '_blank')
+        }, 800)
+      }
     } catch (err) {
-      console.error(err)
-      uiStore.showToast(err.message || 'Error submitting application.', 'danger')
+      uiStore.showToast(err.message || 'Failed to submit application.', 'danger')
     } finally {
       applySubmitting.value = false
     }
   }
 
-  /**
-   * Get the status step number for progress visualization
-   * pending = 1, under_review = 2, approved/rejected = 3
-   */
   function getStatusStep(status) {
-    if (status === 'pending') return 1
-    if (status === 'under_review') return 2
     if (status === 'approved' || status === 'rejected') return 3
+    if (status === 'pending') return 2
     return 1
   }
 
@@ -177,9 +137,10 @@ export const useApplicationStore = defineStore('applications', () => {
     refreshApplications,
     applyViaOfficialLink,
     clearApplications,
-    getStatusStep,
     openApplyModal,
     closeApplyModal,
-    submitApplication
+    submitApplyForm,
+    getStatusStep
   }
 })
+

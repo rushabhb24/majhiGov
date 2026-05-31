@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   scheme: {
     type: Object,
@@ -41,6 +43,15 @@ function getCategoryName(scheme) {
   const cat = props.currentLanguage === 'mr' ? scheme.category_name_mr : (props.currentLanguage === 'hi' ? scheme.category_name_hi : scheme.category_name);
   return cat || scheme.category_name;
 }
+
+const isExpiringSoon = computed(() => {
+  if (!props.scheme.application_end_date) return false
+  const endDate = new Date(props.scheme.application_end_date)
+  const now = new Date()
+  const diffTime = endDate.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays >= 0 && diffDays <= 7
+})
 </script>
 
 <template>
@@ -49,6 +60,11 @@ function getCategoryName(scheme) {
       <!-- Multilingual Category Name -->
       <span class="scheme-category">
         {{ getCategoryName(scheme) }}
+      </span>
+      
+      <!-- Expiry Warning Badge -->
+      <span v-if="isExpiringSoon" class="expiry-warning-badge animate-pulse" title="Scheme deadline is expiring within 7 days">
+        ⚠️ Ending soon!
       </span>
       
       <!-- Government Level Badge (Central/State) -->

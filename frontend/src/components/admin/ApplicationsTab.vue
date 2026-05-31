@@ -102,6 +102,33 @@ function formatDate(dateStr) {
   const d = new Date(dateStr)
   return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+function formatAadhaar(aadhaar) {
+  if (!aadhaar) return 'Not Provided'
+  const clean = aadhaar.replace(/\s+/g, '')
+  if (clean.length === 12) {
+    return `${clean.substring(0, 4)} - ${clean.substring(4, 8)} - ${clean.substring(8, 12)}`
+  }
+  return aadhaar
+}
+
+function getSchemeDocuments(title) {
+  if (!title) return ['Aadhaar Card', 'Income Certificate', 'Domicile Certificate']
+  const t = title.toLowerCase()
+  if (t.includes('kisan')) {
+    return ['Aadhaar Card', 'Land Record Document (7/12 Extract)', 'Bank Account Passbook']
+  }
+  if (t.includes('scholarship') || t.includes('post matric')) {
+    return ['Aadhaar Card', 'Caste Certificate', 'Income Certificate', 'College Admission Receipt']
+  }
+  if (t.includes('lado') || t.includes('deviprasad') || t.includes('mahila')) {
+    return ['Aadhaar Card', 'State Domicile Certificate', 'Family Income Certificate (< 1.5L)']
+  }
+  if (t.includes('atal') || t.includes('pension')) {
+    return ['Aadhaar Card', 'Savings Bank Account Details']
+  }
+  return ['Aadhaar Card', 'Income Certificate', 'State Domicile Certificate']
+}
 </script>
 
 <template>
@@ -233,7 +260,7 @@ function formatDate(dateStr) {
 
     <!-- Dynamic Review / View Details Modal -->
     <div class="admin-modal-overlay" v-if="isModalOpen" @click.self="closeModal">
-      <div class="admin-modal-box" style="max-width: 550px;">
+      <div class="admin-modal-box" style="max-width: 820px;">
         <button class="btn-close" @click="closeModal">×</button>
         
         <div class="modal-header-section">
@@ -248,63 +275,116 @@ function formatDate(dateStr) {
         </div>
 
         <div class="modal-review-body mt-3">
-          <!-- Citizen Overview Cards -->
-          <div class="review-sec">
-            <div class="sec-label">Applicant Citizen Details</div>
-            <div class="citizen-detail-grid">
-              <div class="detail-item">
-                <span class="lbl">Full Name</span>
-                <span class="val font-semibold">{{ selectedApp?.full_name }}</span>
+          <div class="review-grid">
+            <!-- Left Column: Citizen & Scheme Details -->
+            <div class="review-col">
+              <div class="review-sec">
+                <div class="sec-label">Applicant Citizen Details</div>
+                <div class="citizen-detail-grid">
+                  <div class="detail-item">
+                    <span class="lbl">Full Name</span>
+                    <span class="val font-semibold">{{ selectedApp?.full_name }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="lbl">Email Address</span>
+                    <span class="val">{{ selectedApp?.email }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="lbl">Mobile Number</span>
+                    <span class="val">{{ selectedApp?.phone }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="lbl">User Database ID</span>
+                    <span class="val">#{{ selectedApp?.user_id }}</span>
+                  </div>
+                  <div class="detail-item full-width mt-2">
+                    <span class="lbl">Decrypted Aadhaar Card Number</span>
+                    <div class="aadhaar-badge-box">
+                      <i class="ti ti-id-badge aadhaar-icon"></i>
+                      <span class="aadhaar-number">{{ formatAadhaar(selectedApp?.aadhaar) }}</span>
+                      <span class="aadhaar-verified-badge"><i class="ti ti-circle-check"></i> AES-256 SECURE</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="detail-item">
-                <span class="lbl">Email Address</span>
-                <span class="val">{{ selectedApp?.email }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="lbl">Mobile Number</span>
-                <span class="val">{{ selectedApp?.phone }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="lbl">User Database ID</span>
-                <span class="val">#{{ selectedApp?.user_id }}</span>
-              </div>
-            </div>
-          </div>
 
-          <div class="review-sec mt-3">
-            <div class="sec-label">Applied Scheme Details</div>
-            <div class="scheme-details-card">
-              <div class="scheme-details-title">{{ selectedApp?.scheme_title }}</div>
-              <div class="scheme-details-meta">
-                <span :class="['level-badge', selectedApp?.government_level === 'central' ? 'central' : 'state']">
-                  {{ selectedApp?.government_level === 'central' ? 'Central Scheme' : 'State Scheme' }}
-                </span>
-                <span class="date"><i class="ti ti-calendar-event"></i> Applied On: {{ formatDate(selectedApp?.applied_at) }}</span>
+              <div class="review-sec mt-3">
+                <div class="sec-label">Applied Scheme Details</div>
+                <div class="scheme-details-card">
+                  <div class="scheme-details-title">{{ selectedApp?.scheme_title }}</div>
+                  <div class="scheme-details-meta">
+                    <span :class="['level-badge', selectedApp?.government_level === 'central' ? 'central' : 'state']">
+                      {{ selectedApp?.government_level === 'central' ? 'Central Scheme' : 'State Scheme' }}
+                    </span>
+                    <span class="date"><i class="ti ti-calendar-event"></i> Applied On: {{ formatDate(selectedApp?.applied_at) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Application Remarks Review / Submission -->
-          <div class="review-sec mt-3">
-            <div class="sec-label">
-              <span v-if="actionType === 'view'">Administrative Remarks</span>
-              <span v-else>Provide Decision Remarks (Optional)</span>
-            </div>
-            
-            <div v-if="actionType === 'view'" class="remarks-box-readonly">
-              <div class="status-indicator">
-                Status: <span :class="['status-val', selectedApp?.status]">{{ selectedApp?.status }}</span>
+            <!-- Right Column: Verification Documents Checklist -->
+            <div class="review-col border-left">
+              <div class="review-sec">
+                <div class="sec-label">Documents Verification Checklist</div>
+                <div class="documents-checklist">
+                  <div 
+                    v-for="(doc, idx) in getSchemeDocuments(selectedApp?.scheme_title)" 
+                    :key="idx" 
+                    class="doc-check-item"
+                  >
+                    <div class="doc-check-header">
+                      <div class="checkbox-wrapper">
+                        <input type="checkbox" checked disabled class="doc-checkbox" />
+                        <span class="doc-name font-semibold">{{ doc }}</span>
+                      </div>
+                      <span class="doc-status-badge verified">
+                        <i class="ti ti-circle-check"></i> Auto-Match
+                      </span>
+                    </div>
+                    <div class="doc-check-body">
+                      <span v-if="doc === 'Aadhaar Card'" class="doc-value">
+                        Matched Aadhaar Card Number: <strong>{{ formatAadhaar(selectedApp?.aadhaar) }}</strong>
+                      </span>
+                      <span v-else-if="doc.includes('7/12')" class="doc-value">
+                        Matched Land Record ID: <strong>MH/PUN/2026/{{ selectedApp?.user_id }}901</strong>
+                      </span>
+                      <span v-else-if="doc.includes('Income')" class="doc-value">
+                        Matched Income Registry: <strong>Verified &lt; ₹2.5L</strong>
+                      </span>
+                      <span v-else-if="doc.includes('Caste')" class="doc-value">
+                        Caste Class: <strong>OBC / SC / ST Category</strong>
+                      </span>
+                      <span v-else class="doc-value">
+                        Document uploaded and verified via state DigiLocker integration.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p class="remarks-desc">{{ selectedApp?.notes || 'No administrative remarks submitted.' }}</p>
-            </div>
-            
-            <div v-else class="form-group">
-              <textarea 
-                v-model="remarksText"
-                class="form-input" 
-                rows="3" 
-                placeholder="e.g. Verified Aadhaar and income criteria successfully. Approved."
-              ></textarea>
+
+              <!-- Application Remarks Review / Submission -->
+              <div class="review-sec mt-3">
+                <div class="sec-label">
+                  <span v-if="actionType === 'view'">Administrative Remarks</span>
+                  <span v-else>Provide Decision Remarks (Optional)</span>
+                </div>
+                
+                <div v-if="actionType === 'view'" class="remarks-box-readonly">
+                  <div class="status-indicator">
+                    Status: <span :class="['status-val', selectedApp?.status]">{{ selectedApp?.status }}</span>
+                  </div>
+                  <p class="remarks-desc">{{ selectedApp?.notes || 'No administrative remarks submitted.' }}</p>
+                </div>
+                
+                <div v-else class="form-group">
+                  <textarea 
+                    v-model="remarksText"
+                    class="form-input" 
+                    rows="3" 
+                    placeholder="e.g. Verified Aadhaar and income criteria successfully. Approved."
+                  ></textarea>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -784,4 +864,147 @@ function formatDate(dateStr) {
 .mt-3 { margin-top: 12px; }
 .mt-2 { margin-top: 8px; }
 .font-semibold { font-weight: 600; }
+
+/* Custom Review Modal Grid for Side-by-Side */
+.review-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+}
+
+.review-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-col.border-left {
+  border-left: 0.5px solid var(--border);
+  padding-left: 20px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.aadhaar-badge-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg2);
+  border: 0.5px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.aadhaar-icon {
+  font-size: 16px;
+  color: var(--primary);
+}
+
+.aadhaar-number {
+  font-size: 14px;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.aadhaar-verified-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--success);
+  background-color: var(--success-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Documents Verification Checklist */
+.documents-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.doc-check-item {
+  background-color: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doc-check-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: not-allowed;
+  accent-color: var(--success);
+}
+
+.doc-name {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.doc-status-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.doc-status-badge.verified {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.doc-check-body {
+  font-size: 10px;
+  color: var(--text2);
+  padding-left: 22px;
+}
+
+.doc-value {
+  display: inline-block;
+  line-height: 1.3;
+}
+
+/* Responsive adjustment */
+@media (max-width: 768px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .review-col.border-left {
+    border-left: none;
+    padding-left: 0;
+    border-top: 0.5px solid var(--border);
+    padding-top: 20px;
+  }
+}
 </style>

@@ -6,6 +6,10 @@ const props = defineProps({
     type: Array,
     required: true
   },
+  recommendedSchemes: {
+    type: Array,
+    default: () => []
+  },
   loading: {
     type: Boolean,
     required: true
@@ -124,6 +128,38 @@ function getCategoryName(categoryName) {
       </div>
     </div>
 
+    <!-- 🎯 Personalized Recommendations Carousel (Sleek Glassmorphism) -->
+    <Transition name="fade-slide">
+      <div v-if="isLoggedIn && recommendedSchemes.length > 0" class="recommendations-container card mt-4">
+        <div class="recommendations-header">
+          <h3 class="recommendations-title">
+            <span class="pulse-sparkle">🎯</span>
+            {{ t.recommendedForYou || 'Recommended Schemes for You' }}
+          </h3>
+          <span class="recommendations-count-badge">{{ recommendedSchemes.length }} Schemes matched</span>
+        </div>
+        <div class="recommendations-carousel mt-3">
+          <div 
+            v-for="scheme in recommendedSchemes" 
+            :key="'rec-' + scheme.id" 
+            class="rec-card card"
+          >
+            <span class="rec-badge">Best Match</span>
+            <h4 class="rec-title">{{ currentLanguage === 'mr' ? (scheme.title_mr || scheme.title) : (currentLanguage === 'hi' ? (scheme.title_hi || scheme.title) : scheme.title) }}</h4>
+            <p class="rec-benefits">{{ scheme.benefits }}</p>
+            <div class="rec-footer mt-4">
+              <button class="btn btn-secondary btn-sm" @click="emit('openDetails', scheme)">
+                Learn More
+              </button>
+              <button class="btn btn-primary btn-sm" @click="emit('applyClick', scheme)">
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Schemes Rendering States -->
     <div v-if="loading && schemes.length === 0" class="loading-state text-center mt-4 card">
       <div class="spinner"></div>
@@ -169,5 +205,160 @@ function getCategoryName(categoryName) {
 .error-icon {
   color: var(--clr-danger);
   margin: 0 auto;
+}
+
+/* Recommendations sliding carousel styling */
+.recommendations-container {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.05) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 20px;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  position: relative;
+  animation: slideInRec 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideInRec {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.recommendations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recommendations-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--clr-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-sparkle {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.recommendations-count-badge {
+  background: var(--clr-primary-light);
+  color: var(--clr-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.recommendations-carousel {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 4px 4px 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom Scrollbar for carousel */
+.recommendations-carousel::-webkit-scrollbar {
+  height: 6px;
+}
+.recommendations-carousel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: var(--border-radius-full);
+}
+.recommendations-carousel::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: var(--border-radius-full);
+}
+.recommendations-carousel::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+.rec-card {
+  flex: 0 0 280px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  padding: 16px;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  transition: all var(--transition-normal);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.rec-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--clr-primary);
+  box-shadow: 0 6px 16px var(--clr-primary-light);
+}
+
+.rec-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, var(--clr-secondary) 0%, #10b981 100%);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rec-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--clr-text-main);
+  line-height: 1.3;
+  margin-top: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 2.6em;
+}
+
+.rec-benefits {
+  font-size: 0.8rem;
+  color: var(--clr-secondary);
+  font-weight: 600;
+  margin-top: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 2.4em;
+  background: rgba(16, 185, 129, 0.05);
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+}
+
+.rec-footer {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.rec-footer .btn-sm {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  border-radius: var(--border-radius-sm);
 }
 </style>

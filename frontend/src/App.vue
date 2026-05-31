@@ -39,6 +39,7 @@ function handleTabChange(tabName) {
     explorer: '/',
     eligibility: '/eligibility',
     saved: '/saved',
+    jobs: '/jobs',
     applications: '/applications',
     profile: '/profile',
     admin: '/admin/dashboard'
@@ -300,6 +301,20 @@ onMounted(() => {
                   placeholder="Create secure password" 
                   required 
                   />
+              </div>
+
+              <!-- Aadhaar Number Input -->
+              <div class="form-group">
+                <label class="form-label">{{ t('aadhaarLabel') }} *</label>
+                <input 
+                  v-model="authStore.regForm.aadhaar" 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="e.g. 555566667777" 
+                  pattern="[0-9]{12}"
+                  title="Aadhaar number must be exactly 12 digits"
+                  required 
+                />
               </div>
 
               <hr class="divider mt-2" />

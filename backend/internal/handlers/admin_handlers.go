@@ -740,31 +740,22 @@ func AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type UserSummary struct {
-		ID             int       `json:"id"`
-		Email          string    `json:"email"`
-		Phone          string    `json:"phone"`
-		IsVerified     bool      `json:"is_verified"`
-		IsAdmin        bool      `json:"is_admin"`
-		CreatedAt      time.Time `json:"created_at"`
-		FullName       string    `json:"full_name"`
-		DateOfBirth    string    `json:"date_of_birth"`
-		Gender         string    `json:"gender"`
-		State          string    `json:"state"`
-		District       string    `json:"district"`
-		CasteCategory  string    `json:"caste_category"`
-		AnnualIncome   float64   `json:"annual_income"`
-		Occupation     string    `json:"occupation"`
-		EmployeeType   string    `json:"employee_type"`
-		EducationLevel string    `json:"education_level"`
-		IsDisabled     bool      `json:"is_disabled"`
-		Aadhaar        string    `json:"aadhaar"`
+		ID            int       `json:"id"`
+		Email         string    `json:"email"`
+		Phone         string    `json:"phone"`
+		IsVerified    bool      `json:"is_verified"`
+		IsAdmin       bool      `json:"is_admin"`
+		CreatedAt     time.Time `json:"created_at"`
+		FullName      string    `json:"full_name"`
+		State         string    `json:"state"`
+		District      string    `json:"district"`
+		Occupation    string    `json:"occupation"`
+		CasteCategory string    `json:"caste_category"`
 	}
 
 	query := `
 		SELECT u.id, u.email, u.phone, u.is_verified, u.is_admin, u.created_at,
-		       p.full_name, p.date_of_birth, p.gender, p.state, p.district, p.caste_category, 
-		       p.annual_income, p.occupation, p.employee_type, p.education_level, p.is_disabled,
-		       COALESCE(p.aadhaar_encrypted, '')
+		       p.full_name, p.state, p.district, p.occupation, p.caste_category
 		FROM users u
 		JOIN user_profiles p ON u.id = p.user_id
 		ORDER BY u.created_at DESC`
@@ -779,21 +770,12 @@ func AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var users []UserSummary = []UserSummary{}
 	for rows.Next() {
 		var us UserSummary
-		var dob time.Time
-		var aadhaarEncrypted string
 		err := rows.Scan(
 			&us.ID, &us.Email, &us.Phone, &us.IsVerified, &us.IsAdmin, &us.CreatedAt,
-			&us.FullName, &dob, &us.Gender, &us.State, &us.District, &us.CasteCategory,
-			&us.AnnualIncome, &us.Occupation, &us.EmployeeType, &us.EducationLevel, &us.IsDisabled,
-			&aadhaarEncrypted,
+			&us.FullName, &us.State, &us.District, &us.Occupation, &us.CasteCategory,
 		)
 		if err == nil {
-			us.DateOfBirth = dob.Format("2006-01-02")
-			decrypted, _ := db.Decrypt(aadhaarEncrypted)
-			us.Aadhaar = decrypted
 			users = append(users, us)
-		} else {
-			log.Printf("[SCAN ERROR] Scan failed: %v", err)
 		}
 	}
 
@@ -842,49 +824,6 @@ func AdminUserToggleHandler(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": fmt.Sprintf("User status successfully changed to %s!", statusText),
 		"verified": newStatus,
-	})
-}
-
-// AdminUserDeleteHandler securely executes a cascade deletion of the target user record
-func AdminUserDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
-	var req struct {
-		UserID int `json:"user_id"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil || req.UserID == 0 {
-		writeJSONError(w, http.StatusBadRequest, "Invalid request body payload")
-		return
-	}
-
-	// Verify user exists
-	var exists bool
-	err = db.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", req.UserID).Scan(&exists)
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Database error: "+err.Error())
-		return
-	}
-	if !exists {
-		writeJSONError(w, http.StatusNotFound, "User not found")
-		return
-	}
-
-	// Delete user (Cascading cascade deletions are automatically executed by standard database references)
-	_, err = db.DB.Exec("DELETE FROM users WHERE id = $1", req.UserID)
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Failed to delete user: "+err.Error())
-		return
-	}
-
-	log.Printf("[ADMIN ACTION] Deleted user account ID: %d successfully.", req.UserID)
-
-	writeJSONResponse(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "User account successfully deleted!",
 	})
 }
 

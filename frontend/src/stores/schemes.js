@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { API_BASE_URL } from '../config.js'
+import { schemesApi } from '../api/schemes.js'
 
 export const useSchemeStore = defineStore('schemes', () => {
   // State
@@ -19,18 +19,11 @@ export const useSchemeStore = defineStore('schemes', () => {
     loading.value = true
     error.value = null
     try {
-      const url = new URL(`${API_BASE_URL}/api/schemes`)
-      if (selectedCategory.value !== 'All') {
-        url.searchParams.append('category', selectedCategory.value)
-      }
-      if (searchQuery.value) {
-        url.searchParams.append('search', searchQuery.value)
-      }
-      url.searchParams.append('sort_by', sortBy.value)
-
-      const response = await fetch(url.toString())
-      if (!response.ok) throw new Error('Failed to load schemes from server.')
-      const data = await response.json()
+      const data = await schemesApi.fetchPublicSchemes({
+        category: selectedCategory.value,
+        search: searchQuery.value,
+        sort_by: sortBy.value
+      })
       schemes.value = data || []
     } catch (err) {
       console.error(err)
@@ -44,9 +37,7 @@ export const useSchemeStore = defineStore('schemes', () => {
   async function openDetails(scheme) {
     loading.value = true
     try {
-      const response = await fetch(`${API_BASE_URL}/api/schemes/${scheme.id}`)
-      if (!response.ok) throw new Error('Could not fetch details.')
-      const data = await response.json()
+      const data = await schemesApi.fetchSchemeDetails(scheme.id)
       selectedScheme.value = data
       detailModalOpen.value = true
     } catch (err) {

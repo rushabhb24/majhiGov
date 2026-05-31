@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { API_BASE_URL } from '../config.js'
+import { eligibilityApi } from '../api/eligibility.js'
 
 export const useEligibilityStore = defineStore('eligibility', () => {
   // State
@@ -28,19 +28,13 @@ export const useEligibilityStore = defineStore('eligibility', () => {
     checking.value = true
     results.value = null
     try {
-      const response = await fetch(`${API_BASE_URL}/api/eligibility-check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile.value)
-      })
-      if (!response.ok) throw new Error('Eligibility check failed.')
-      const data = await response.json()
+      const data = await eligibilityApi.checkEligibility(profile.value)
       results.value = data
       checked.value = true
       uiStore.showToast('Eligibility calculated successfully!', 'success')
     } catch (err) {
       console.error(err)
-      uiStore.showToast('Could not connect to Go backend.', 'danger')
+      uiStore.showToast(err.message || 'Could not connect to Go backend.', 'danger')
     } finally {
       checking.value = false
     }
@@ -73,6 +67,9 @@ export const useEligibilityStore = defineStore('eligibility', () => {
     const { useUiStore } = await import('./ui.js')
     const uiStore = useUiStore()
     uiStore.showToast('Account logged in & eligibility profile prefilled!', 'info')
+
+    // Automatically trigger immediate background eligibility matching!
+    await submitEligibility()
   }
 
   function reset() {

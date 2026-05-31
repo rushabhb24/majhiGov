@@ -93,6 +93,13 @@ function handleLogout() {
             <span v-if="savedCount > 0" class="badge">{{ savedCount }}</span>
           </div>
           <div 
+            :class="['nav-link', { active: activeTab === 'jobs' }]" 
+            @click="navigateTo('jobs')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            <span>{{ t.govtJobsNav || 'Govt Jobs' }}</span>
+          </div>
+          <div 
             v-if="user"
             :class="['nav-link', { active: activeTab === 'applications' }]" 
             @click="navigateTo('applications')"
@@ -198,6 +205,10 @@ function handleLogout() {
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             <span>{{ t.saved }}</span>
             <span v-if="savedCount > 0" class="badge" style="margin-left:auto;">{{ savedCount }}</span>
+          </div>
+          <div :class="['mobile-nav-link', { active: activeTab === 'jobs' }]" @click="navigateTo('jobs')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            <span>{{ t.govtJobsNav || 'Govt Jobs' }}</span>
           </div>
           <div v-if="user" :class="['mobile-nav-link', { active: activeTab === 'applications' }]" @click="navigateTo('applications')">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>

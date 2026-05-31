@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { API_BASE_URL } from '../config.js'
 import { useSchemeStore } from './schemes.js'
+import { bookmarksApi } from '../api/bookmarks.js'
 
 export const useBookmarkStore = defineStore('bookmarks', () => {
   // State
@@ -20,16 +20,10 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     if (!authStore.token) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/saved`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${authStore.token}` }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        if (Array.isArray(data)) {
-          savedSchemeIds.value = data
-          localStorage.setItem('yojana_saved_ids', JSON.stringify(data))
-        }
+      const data = await bookmarksApi.fetchSavedSchemes()
+      if (Array.isArray(data)) {
+        savedSchemeIds.value = data
+        localStorage.setItem('yojana_saved_ids', JSON.stringify(data))
       }
     } catch (err) {
       console.error('Failed to fetch bookmarks from server:', err)
@@ -49,18 +43,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/saved`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.token}`
-        },
-        body: JSON.stringify({ scheme_id: Number(schemeId) })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to toggle bookmark on server')
-      }
+      await bookmarksApi.toggleSavedScheme(schemeId)
 
       const index = savedSchemeIds.value.indexOf(schemeId)
       if (index === -1) {

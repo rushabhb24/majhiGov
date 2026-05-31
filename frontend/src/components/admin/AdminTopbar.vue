@@ -42,7 +42,8 @@ const actionLabel = computed(() => {
     eligibility: 'Save Rules',
     notifications: 'Send Notification',
     analytics: 'Export Report',
-    settings: 'Save Settings'
+    settings: 'Save Settings',
+    jobs: 'Add Govt Job'
   }
   return actions[props.activeTab] || 'Save Changes'
 })

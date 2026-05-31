@@ -1948,3 +1948,27 @@ select.form-control {
   background-color: var(--clr-danger-light);
   color: var(--clr-danger);
 }
+
+.expiry-warning-badge {
+  background-color: var(--clr-danger-light);
+  color: var(--clr-danger);
+  border: 0.5px solid var(--clr-danger);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
