@@ -23,25 +23,19 @@ async function handleAdminLogin() {
   error.value = ''
 
   try {
-    // 1. Authenticate credentials
+    // 1. Authenticate credentials (restricting to administrative logins)
     authStore.loginForm.email = email.value
     authStore.loginForm.password = password.value
-    await authStore.loginUser()
+    await authStore.loginUser(true)
 
-    // 2. Double-check if the session is actually an Administrator
-    if (authStore.isLoggedIn) {
-      if (authStore.isAdmin) {
-        console.log("AdminLogin: Successfully authenticated administrator.")
-        uiStore.showToast('Welcome back to the Administrative Datastore!', 'success')
-        router.push('/admin/dashboard')
-      } else {
-        console.warn("AdminLogin: Citizen credentials entered on administrative login page. Access denied.")
-        error.value = 'Access Denied: Administrative privileges required.'
-        uiStore.showToast('Access Denied: Administrative privileges required.', 'danger')
-        authStore.logoutUser() // Securely clear non-admin token
-      }
+    // 2. Redirect directly to administrative dashboard
+    if (authStore.isLoggedIn && authStore.isAdmin) {
+      console.log("AdminLogin: Successfully authenticated administrator.")
+      uiStore.showToast('Welcome back to the Administrative Datastore!', 'success')
+      router.push('/admin/dashboard')
     } else {
-      error.value = 'Invalid admin credentials'
+      error.value = 'Access Denied: Administrative privileges required.'
+      authStore.logoutUser()
     }
   } catch (err) {
     console.error(err)

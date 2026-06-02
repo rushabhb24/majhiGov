@@ -86,7 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginUser() {
+  async function loginUser(isAdminLogin = false) {
     const { useUiStore } = await import('./ui.js')
     const uiStore = useUiStore()
 
@@ -94,6 +94,16 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await authApi.login(loginForm.value)
       if (data.success && data.token) {
+        const isUserAdmin = data.profile ? !!data.profile.is_admin : false
+
+        if (!isAdminLogin && isUserAdmin) {
+          throw new Error('Access Denied: Administrative credentials must log in via the Admin Console.')
+        }
+
+        if (isAdminLogin && !isUserAdmin) {
+          throw new Error('Access Denied: Administrative privileges required.')
+        }
+
         token.value = data.token
         userProfile.value = data.profile
         localStorage.setItem('yojana_auth_token', data.token)
@@ -103,14 +113,16 @@ export const useAuthStore = defineStore('auth', () => {
         const eligibilityStore = useEligibilityStore()
         eligibilityStore.prefillFromProfile(data.profile)
 
-        // Sync bookmarks and applications
-        const { useBookmarkStore } = await import('./bookmarks.js')
-        const bookmarkStore = useBookmarkStore()
-        await bookmarkStore.fetchSavedSchemes()
+        // Sync bookmarks and applications (only for regular citizens)
+        if (!isUserAdmin) {
+          const { useBookmarkStore } = await import('./bookmarks.js')
+          const bookmarkStore = useBookmarkStore()
+          await bookmarkStore.fetchSavedSchemes()
 
-        const { useApplicationStore } = await import('./applications.js')
-        const applicationStore = useApplicationStore()
-        await applicationStore.fetchApplications()
+          const { useApplicationStore } = await import('./applications.js')
+          const applicationStore = useApplicationStore()
+          await applicationStore.fetchApplications()
+        }
 
         uiStore.showToast('Welcome back! Logged in successfully.', 'success')
         authModalOpen.value = false
@@ -121,6 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err) {
       console.error(err)
       uiStore.showToast(err.message || 'Authentication failed.', 'danger')
+      throw err
     } finally {
       authSubmitting.value = false
     }

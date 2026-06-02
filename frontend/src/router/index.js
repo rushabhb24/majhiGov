@@ -58,6 +58,14 @@ router.beforeEach((to) => {
   const authStore = useAuthStore()
   console.log("Router: Navigating to:", to.path, "requiresAuth:", !!to.meta.requiresAuth, "requiresAdmin:", !!to.meta.requiresAdmin, "isLoggedIn:", authStore.isLoggedIn, "isAdmin:", authStore.isAdmin)
 
+  // Enforce that logged-in administrators are restricted to the Admin Dashboard
+  if (authStore.isAdmin) {
+    if (to.path === '/admin-dashboard' || !to.path.startsWith('/admin/')) {
+      console.log("Router: Admin is logged in. Redirecting to Admin Dashboard.")
+      return '/admin/dashboard'
+    }
+  }
+
   // Strict prefix guard for admin routes
   if (to.path.startsWith('/admin/')) {
     if (!authStore.isAdmin) {
