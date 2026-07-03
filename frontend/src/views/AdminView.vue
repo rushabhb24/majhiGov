@@ -108,18 +108,14 @@ let refreshInterval = null
 
 // On mount guard and sync load
 onMounted(async () => {
-  console.log("AdminView: Component mounted. isLoggedIn:", authStore.isLoggedIn, "isAdmin:", authStore.isAdmin)
   if (!authStore.isLoggedIn || !authStore.isAdmin) {
-    console.log("AdminView: Access denied, redirecting to home")
     uiStore.showToast('Access Denied: Administrative privileges required.', 'danger')
     router.push('/')
     return
   }
   
-  console.log("AdminView: Access granted, refreshing data...")
   try {
     await refreshData()
-    console.log("AdminView: Data refresh complete! Schemes loaded:", adminStore.schemes.length)
     isInitialLoading.value = false
     
     // Start active real-time data polling every 10 seconds

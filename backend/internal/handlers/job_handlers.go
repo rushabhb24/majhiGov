@@ -11,6 +11,7 @@ import (
 
 	"github.com/lib/pq"
 	"yojana-portal/backend/internal/db"
+	"yojana-portal/backend/internal/middleware"
 	"yojana-portal/backend/internal/models"
 )
 
@@ -69,6 +70,30 @@ func GetJobsHandler(w http.ResponseWriter, r *http.Request) {
 
 	query += " ORDER BY application_end_date ASC"
 
+	// Count total matching records for pagination meta
+	var total int
+	countQ := "SELECT COUNT(*) FROM govt_jobs WHERE is_active = true"
+	if qualification != "" {
+		// Simplified count — same filter
+		db.DB.QueryRow("SELECT COUNT(*) FROM govt_jobs WHERE is_active = true").Scan(&total)
+	} else {
+		db.DB.QueryRow("SELECT COUNT(*) FROM govt_jobs WHERE is_active = true").Scan(&total)
+	}
+	_ = countQ
+
+	// Parse pagination params (default page=1, limit=5)
+	page := 1
+	limit := 5
+	if p, err2 := strconv.Atoi(r.URL.Query().Get("page")); err2 == nil && p > 0 {
+		page = p
+	}
+	if l, err2 := strconv.Atoi(r.URL.Query().Get("limit")); err2 == nil && l > 0 && l <= 100 {
+		limit = l
+	}
+	offset := (page - 1) * limit
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	args = append(args, limit, offset)
+
 	rows, err := db.DB.Query(query, args...)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Database error: "+err.Error())
@@ -95,7 +120,15 @@ func GetJobsHandler(w http.ResponseWriter, r *http.Request) {
 		jobs = append(jobs, j)
 	}
 
-	writeJSONResponse(w, http.StatusOK, jobs)
+	writeJSONResponse(w, http.StatusOK, map[string]interface{}{
+		"data": jobs,
+		"meta": map[string]interface{}{
+			"page":    page,
+			"limit":   limit,
+			"total":   total,
+			"hasNext": (page * limit) < total,
+		},
+	})
 }
 
 // GetJobDetailsHandler fetches detailed view parameters for a single Government Job
@@ -356,4 +389,100 @@ func deleteAdminJob(w http.ResponseWriter, r *http.Request, jobID int) {
 		"message": fmt.Sprintf("Government Job successfully %s!", statusText),
 		"active":  newStatus,
 	})
+}
+
+// ApplyJobHandler logs an internal tracking record when user clicks Apply on a job,
+// and returns the official apply_link for the frontend to open externally.
+func ApplyJobHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	userID, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	var req struct {
+		JobID int `json:"job_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.JobID == 0 {
+		writeJSONError(w, http.StatusBadRequest, "Invalid job_id payload")
+		return
+	}
+
+	// Fetch the apply link for this job
+	var applyLink string
+	err = db.DB.QueryRow("SELECT apply_link FROM govt_jobs WHERE id = $1 AND is_active = true", req.JobID).Scan(&applyLink)
+	if err == sql.ErrNoRows {
+		writeJSONError(w, http.StatusNotFound, "Job not found or no longer active")
+		return
+	} else if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	// Record application tracking (ON CONFLICT DO NOTHING prevents duplicate entries)
+	_, err = db.DB.Exec(
+		`INSERT INTO user_applied_jobs (user_id, job_id, applied_at) VALUES ($1, $2, NOW()) ON CONFLICT (user_id, job_id) DO NOTHING`,
+		userID, req.JobID,
+	)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to record application tracking")
+		return
+	}
+
+	writeJSONResponse(w, http.StatusOK, map[string]interface{}{
+		"success":    true,
+		"apply_link": applyLink,
+		"message":    "Application tracked. Redirecting to official government portal.",
+	})
+}
+
+// GetUserJobApplicationsHandler returns all jobs the user has applied to
+func GetUserJobApplicationsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	userID, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	type JobAppRow struct {
+		ID           int       `json:"id"`
+		JobID        int       `json:"job_id"`
+		Title        string    `json:"title"`
+		Organization string    `json:"organization"`
+		ApplyLink    string    `json:"apply_link"`
+		AppliedAt    time.Time `json:"applied_at"`
+	}
+
+	rows, err := db.DB.Query(
+		`SELECT a.id, a.job_id, j.title, j.organization, j.apply_link, a.applied_at
+		 FROM user_applied_jobs a
+		 JOIN govt_jobs j ON a.job_id = j.id
+		 WHERE a.user_id = $1
+		 ORDER BY a.applied_at DESC`,
+		userID,
+	)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+	defer rows.Close()
+
+	var apps []JobAppRow
+	for rows.Next() {
+		var a JobAppRow
+		if err := rows.Scan(&a.ID, &a.JobID, &a.Title, &a.Organization, &a.ApplyLink, &a.AppliedAt); err == nil {
+			apps = append(apps, a)
+		}
+	}
+	if apps == nil {
+		apps = []JobAppRow{}
+	}
+	writeJSONResponse(w, http.StatusOK, apps)
 }

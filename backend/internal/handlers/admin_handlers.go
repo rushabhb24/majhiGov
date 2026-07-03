@@ -191,14 +191,7 @@ func GetAdminAnalyticsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(recentApps) == 0 {
-		recentApps = []RecentApp{
-			{ID: 1, FullName: "Ramesh Kumar", SchemeName: "PM Kisan Samman Nidhi", Status: "approved", TimeAgo: "2 hours ago"},
-			{ID: 2, FullName: "Priya Sharma", SchemeName: "NSP Post Matric Scholarship", Status: "pending", TimeAgo: "5 hours ago"},
-			{ID: 3, FullName: "Amit Joshi", SchemeName: "PM Mudra Loan", Status: "rejected", TimeAgo: "1 day ago"},
-			{ID: 4, FullName: "Sunita Patil", SchemeName: "Lado Deviprasad Scheme", Status: "pending", TimeAgo: "2 days ago"},
-		}
-	}
+	// recentApps stays as empty slice if no real applications exist
 
 	// 7. Recent Activity logs compiled from database states
 	type ActivityItem struct {
@@ -266,15 +259,7 @@ func GetAdminAnalyticsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Dynamic mock counts for dashboard requirements if database values are empty
-	if len(activities) == 0 {
-		activities = []ActivityItem{
-			{Type: "scheme", Text: "New scheme PM Vishwakarma Yojana added to Business category", TimeAgo: "2 hours ago"},
-			{Type: "scheme", Text: "Scheme Ladli Behna deadline updated to 31 March 2025", TimeAgo: "5 hours ago"},
-			{Type: "user", Text: "User Ramesh Kumar registered from Rajasthan", TimeAgo: "1 day ago"},
-			{Type: "scheme", Text: "Category Senior Citizens updated with 2 new schemes", TimeAgo: "2 days ago"},
-		}
-	}
+	// activities stays as empty slice if no real activity exists
 
 	response := map[string]interface{}{
 		"total_schemes":         totalSchemes,

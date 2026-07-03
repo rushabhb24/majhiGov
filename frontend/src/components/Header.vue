@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
+const showNotifications = ref(false);
 
 defineProps({
   activeTab: {
@@ -159,6 +160,31 @@ function handleLogout() {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
           </button>
+
+          <!-- Notifications Bell -->
+          <div v-if="user" class="notifications-wrapper" style="position: relative;">
+            <button class="btn-icon" @click="showNotifications = !showNotifications" title="Notifications">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <span v-if="authStore.unreadCount > 0" class="badge badge-danger" style="position: absolute; top: 0; right: 0; transform: translate(25%, -25%); font-size: 0.6rem; padding: 2px 5px;">{{ authStore.unreadCount }}</span>
+            </button>
+
+            <!-- Dropdown -->
+            <div v-if="showNotifications" class="notifications-dropdown card" style="position: absolute; top: 100%; right: 0; width: 300px; max-height: 400px; overflow-y: auto; z-index: 1000; margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin:0; font-size: 0.95rem;">Notifications</h4>
+                <button v-if="authStore.unreadCount > 0" @click="authStore.markNotificationsRead()" style="background: none; border: none; color: var(--clr-primary); cursor: pointer; font-size: 0.8rem;">Mark all read</button>
+              </div>
+              <div v-if="authStore.notifications.length === 0" style="text-align: center; color: var(--clr-text-muted); font-size: 0.85rem; padding: 20px 0;">
+                No notifications
+              </div>
+              <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+                <div v-for="(notif, index) in authStore.notifications" :key="index" :style="{ background: notif.is_read ? 'transparent' : 'var(--clr-primary-light)', padding: '10px', borderRadius: '8px', border: '1px solid var(--clr-border)' }">
+                  <div style="font-weight: 600; font-size: 0.85rem;">{{ notif.title }}</div>
+                  <div style="font-size: 0.8rem; color: var(--clr-text-muted); margin-top: 4px;">{{ notif.message }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Login / User Badge -->
           <div v-if="user" class="user-profile-badge">

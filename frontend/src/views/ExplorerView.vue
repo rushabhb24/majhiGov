@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, onMounted } from 'vue'
+import { computed, watch, onMounted, onUnmounted, ref } from 'vue'
 import { useSchemeStore } from '../stores/schemes'
 import { useBookmarkStore } from '../stores/bookmarks'
 import { useAuthStore } from '../stores/auth'
@@ -17,7 +17,6 @@ const uiStore = useUiStore()
 const eligibilityStore = useEligibilityStore()
 const { t, locale, messages } = useI18n()
 
-// Translation object for child components that use t.key property access
 const tObj = computed(() => messages.value[locale.value] || {})
 
 const recommendedSchemes = computed(() => {
@@ -34,7 +33,24 @@ function handleApplyAction(scheme) {
   applicationStore.openApplyModal(scheme)
 }
 
-// Search debouncer
+// ── Infinite scroll ────────────────────────────────────────────────────────
+const sentinelRef = ref(null)
+let observer = null
+
+function setupInfiniteScroll() {
+  if (observer) observer.disconnect()
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && schemeStore.hasNextPage && !schemeStore.loadingMore) {
+        schemeStore.loadMoreSchemes()
+      }
+    },
+    { threshold: 0.1 }
+  )
+  if (sentinelRef.value) observer.observe(sentinelRef.value)
+}
+
+// Search debouncer — resets to page 1
 let searchTimeout
 watch(() => schemeStore.searchQuery, () => {
   clearTimeout(searchTimeout)
@@ -49,6 +65,12 @@ watch([() => schemeStore.selectedCategory, () => schemeStore.sortBy], () => {
 
 onMounted(() => {
   schemeStore.fetchSchemes()
+  // Sentinel element is rendered by SchemeExplorer; set up after next tick
+  setTimeout(setupInfiniteScroll, 200)
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
 })
 </script>
 
@@ -60,6 +82,8 @@ onMounted(() => {
     :schemes="schemeStore.schemes"
     :recommended-schemes="recommendedSchemes"
     :loading="schemeStore.loading"
+    :loading-more="schemeStore.loadingMore"
+    :has-next-page="schemeStore.hasNextPage"
     :error="schemeStore.error"
     :current-language="uiStore.currentLanguage"
     :saved-scheme-ids="bookmarkStore.savedSchemeIds"
@@ -71,5 +95,15 @@ onMounted(() => {
     @retry="schemeStore.fetchSchemes"
     @login-required="authStore.openAuthModal('login')"
     @apply-click="handleApplyAction"
+    @load-more="schemeStore.loadMoreSchemes"
   />
+  <!-- Infinite scroll sentinel -->
+  <div ref="sentinelRef" class="scroll-sentinel" aria-hidden="true"></div>
 </template>
+
+<style scoped>
+.scroll-sentinel {
+  height: 1px;
+  width: 100%;
+}
+</style>

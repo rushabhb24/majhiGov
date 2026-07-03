@@ -12,11 +12,16 @@ app.use(i18n)
 app.use(router)
 app.mount('#app')
 
-// Register Service Worker for PWA offline capabilities
+// Unregister active Service Workers in dev to prevent caching conflicts & extension script interception bugs
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('Service Worker registered successfully:', reg.scope))
-      .catch(err => console.error('Service Worker registration failed:', err));
-  });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister().then(() => {
+        // Clear caches to remove any stale/cached index.html or API responses
+        caches.keys().then((keys) => {
+          return Promise.all(keys.map(key => caches.delete(key)))
+        })
+      })
+    }
+  })
 }

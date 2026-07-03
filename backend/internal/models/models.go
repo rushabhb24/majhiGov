@@ -37,6 +37,7 @@ type UserProfile struct {
 	Email          string    `json:"email" db:"email"`
 	Phone          string    `json:"phone" db:"phone"`
 	Aadhaar        string    `json:"aadhaar" db:"aadhaar"`
+	IsAdmin        bool      `json:"is_admin" db:"is_admin"`
 	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
 }
 

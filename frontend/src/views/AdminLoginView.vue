@@ -30,7 +30,6 @@ async function handleAdminLogin() {
 
     // 2. Redirect directly to administrative dashboard
     if (authStore.isLoggedIn && authStore.isAdmin) {
-      console.log("AdminLogin: Successfully authenticated administrator.")
       uiStore.showToast('Welcome back to the Administrative Datastore!', 'success')
       router.push('/admin/dashboard')
     } else {

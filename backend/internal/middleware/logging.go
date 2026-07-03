@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
@@ -28,6 +28,6 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(sw, r)
 
 		duration := time.Since(start)
-		log.Printf("[%s] %s %d %v", r.Method, r.URL.Path, sw.statusCode, duration)
+		logrus.WithFields(logrus.Fields{"method": r.Method, "path": r.URL.Path, "status": sw.statusCode, "duration": duration}).Info("request")
 	})
 }

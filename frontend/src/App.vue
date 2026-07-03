@@ -69,9 +69,8 @@ function handleApplyAction(scheme) {
 // Lifecycle
 onMounted(() => {
   bookmarkStore.loadBookmarks()
-  if (authStore.token) {
-    authStore.fetchUserProfile()
-  }
+  // Unconditionally attempt to restore session via httpOnly cookie
+  authStore.fetchUserProfile()
 })
 </script>
 

@@ -2,22 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '../api/auth.js'
 
-function parseJwt(token) {
-  try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-    }).join(''))
-    return JSON.parse(jsonPayload)
-  } catch (e) {
-    return null
-  }
-}
-
 export const useAuthStore = defineStore('auth', () => {
-  // State
-  const token = ref(localStorage.getItem('yojana_auth_token') || null)
+  // State — no token stored in JS memory (auth is managed via httpOnly cookie on the server)
   const userProfile = ref(null)
   const authModalOpen = ref(false)
   const authTab = ref('login')
@@ -41,13 +27,9 @@ export const useAuthStore = defineStore('auth', () => {
   const loginForm = ref({ email: '', password: '' })
   const authSubmitting = ref(false)
 
-  // Getters
-  const isLoggedIn = computed(() => !!token.value)
-  const isAdmin = computed(() => {
-    if (!token.value) return false
-    const claims = parseJwt(token.value)
-    return claims ? !!claims.is_admin : false
-  })
+  // Getters — derive auth state from profile (not from a stored token)
+  const isLoggedIn = computed(() => !!userProfile.value)
+  const isAdmin = computed(() => !!userProfile.value?.is_admin)
 
   // Actions
   async function registerUser() {
@@ -79,7 +61,6 @@ export const useAuthStore = defineStore('auth', () => {
       authTab.value = 'login'
       loginForm.value.email = regForm.value.email
     } catch (err) {
-      console.error(err)
       uiStore.showToast(err.message || 'Authentication failed.', 'danger')
     } finally {
       authSubmitting.value = false
@@ -93,8 +74,8 @@ export const useAuthStore = defineStore('auth', () => {
     authSubmitting.value = true
     try {
       const data = await authApi.login(loginForm.value)
-      if (data.success && data.token) {
-        const isUserAdmin = data.profile ? !!data.profile.is_admin : false
+      if (data.success && data.profile) {
+        const isUserAdmin = !!data.profile.is_admin
 
         if (!isAdminLogin && isUserAdmin) {
           throw new Error('Access Denied: Administrative credentials must log in via the Admin Console.')
@@ -104,9 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
           throw new Error('Access Denied: Administrative privileges required.')
         }
 
-        token.value = data.token
         userProfile.value = data.profile
-        localStorage.setItem('yojana_auth_token', data.token)
 
         // Prefill eligibility from profile
         const { useEligibilityStore } = await import('./eligibility.js')
@@ -122,6 +101,9 @@ export const useAuthStore = defineStore('auth', () => {
           const { useApplicationStore } = await import('./applications.js')
           const applicationStore = useApplicationStore()
           await applicationStore.fetchApplications()
+
+          // Connect WebSocket for real-time notifications
+          connectNotifications()
         }
 
         uiStore.showToast('Welcome back! Logged in successfully.', 'success')
@@ -131,7 +113,6 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('Authentication response was invalid')
       }
     } catch (err) {
-      console.error(err)
       uiStore.showToast(err.message || 'Authentication failed.', 'danger')
       throw err
     } finally {
@@ -140,29 +121,30 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUserProfile() {
-    if (!token.value) return
     try {
       const data = await authApi.fetchProfile()
       if (data.success && data.profile) {
         userProfile.value = data.profile
 
-        // Prefill eligibility
         const { useEligibilityStore } = await import('./eligibility.js')
         const eligibilityStore = useEligibilityStore()
         eligibilityStore.prefillFromProfile(data.profile)
 
-        // Fetch bookmarks and applications
-        const { useBookmarkStore } = await import('./bookmarks.js')
-        const bookmarkStore = useBookmarkStore()
-        bookmarkStore.fetchSavedSchemes()
+        if (!data.profile.is_admin) {
+          const { useBookmarkStore } = await import('./bookmarks.js')
+          const bookmarkStore = useBookmarkStore()
+          bookmarkStore.fetchSavedSchemes()
 
-        const { useApplicationStore } = await import('./applications.js')
-        const applicationStore = useApplicationStore()
-        applicationStore.fetchApplications()
+          const { useApplicationStore } = await import('./applications.js')
+          const applicationStore = useApplicationStore()
+          applicationStore.fetchApplications()
+
+          connectNotifications()
+        }
       }
     } catch (err) {
-      console.error('Session restoration failed:', err)
-      logoutUser()
+      // Profile fetch failed — user is not authenticated
+      userProfile.value = null
     }
   }
 
@@ -176,31 +158,93 @@ export const useAuthStore = defineStore('auth', () => {
         userProfile.value = result.profile
         uiStore.showToast('Profile updated successfully!', 'success')
 
-        // Re-prefill eligibility with updated profile
         const { useEligibilityStore } = await import('./eligibility.js')
         const eligibilityStore = useEligibilityStore()
         eligibilityStore.prefillFromProfile(result.profile)
       }
     } catch (err) {
-      console.error(err)
       uiStore.showToast(err.message || 'Failed to update profile', 'danger')
       throw err
     }
   }
 
-  function logoutUser() {
-    token.value = null
+  async function logoutUser() {
+    try {
+      // Tell the server to clear the httpOnly cookie
+      await authApi.logout()
+    } catch (e) {
+      // Still clear local state even if server call fails
+    }
     userProfile.value = null
+    disconnectNotifications()
+
+    // Clear all legacy localStorage leftovers
     localStorage.removeItem('yojana_auth_token')
     localStorage.removeItem('yojana_saved_ids')
 
-    // Clear dependent stores (import dynamically)
     import('./bookmarks.js').then(({ useBookmarkStore }) => {
       try { useBookmarkStore().clearBookmarks() } catch (e) { /* ok */ }
     })
     import('./applications.js').then(({ useApplicationStore }) => {
       try { useApplicationStore().clearApplications() } catch (e) { /* ok */ }
     })
+  }
+
+  // ─── WebSocket / Notifications ────────────────────────────────────────────
+
+  const notifications = ref([])
+  const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length)
+  let wsConnection = null
+
+  function connectNotifications() {
+    if (wsConnection) return // Already connected
+    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8080'}/ws`
+    try {
+      wsConnection = new WebSocket(wsUrl)
+      wsConnection.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          notifications.value.unshift({ ...msg, is_read: false })
+        } catch (e) { /* ignore parse errors */ }
+      }
+      wsConnection.onclose = () => {
+        wsConnection = null
+        // Auto-reconnect after 5 seconds if user is still logged in
+        if (userProfile.value) {
+          setTimeout(connectNotifications, 5000)
+        }
+      }
+      wsConnection.onerror = () => {
+        wsConnection = null
+      }
+    } catch (e) {
+      // WebSocket not available (e.g., HTTP-only dev mode)
+    }
+  }
+
+  function disconnectNotifications() {
+    if (wsConnection) {
+      wsConnection.close()
+      wsConnection = null
+    }
+    notifications.value = []
+  }
+
+  async function fetchNotifications() {
+    if (!isLoggedIn.value) return
+    try {
+      const data = await authApi.fetchNotifications()
+      if (Array.isArray(data)) {
+        notifications.value = data
+      }
+    } catch (e) { /* fail silently */ }
+  }
+
+  async function markNotificationsRead() {
+    try {
+      await authApi.markNotificationsRead()
+      notifications.value = notifications.value.map(n => ({ ...n, is_read: true }))
+    } catch (e) { /* fail silently */ }
   }
 
   function openAuthModal(tab = 'login') {
@@ -213,7 +257,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    token,
     userProfile,
     authModalOpen,
     authTab,
@@ -222,11 +265,16 @@ export const useAuthStore = defineStore('auth', () => {
     authSubmitting,
     isLoggedIn,
     isAdmin,
+    notifications,
+    unreadCount,
     registerUser,
     loginUser,
     fetchUserProfile,
     updateProfile,
     logoutUser,
+    fetchNotifications,
+    markNotificationsRead,
+    connectNotifications,
     openAuthModal,
     closeAuthModal
   }

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useJobStore } from '../stores/jobs'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
@@ -17,6 +17,7 @@ const selectedJob = ref(null)
 
 onMounted(async () => {
   await fetchJobsList()
+  setTimeout(setupInfiniteScroll, 200)
 })
 
 async function fetchJobsList() {
@@ -90,15 +91,47 @@ const personalizedRecommendations = computed(() => {
   })
 })
 
-function handleApplyAction(job) {
-  const applyUrl = job.apply_link || job.official_website
-  if (applyUrl) {
-    window.open(applyUrl, '_blank', 'noopener,noreferrer')
-    uiStore.showToast('Redirecting to official government job application portal...', 'success')
-  } else {
-    uiStore.showToast('Official apply link is currently offline.', 'warning')
+async function handleApplyAction(job) {
+  if (!authStore.isLoggedIn) {
+    authStore.openAuthModal('login')
+    uiStore.showToast('Please log in to track your applications.', 'info')
+    return
+  }
+  try {
+    // Dual action: log internal tracking record + get official apply link
+    const applyLink = await jobStore.applyToJob(job.id)
+    if (applyLink) {
+      window.open(applyLink, '_blank', 'noopener,noreferrer')
+      uiStore.showToast('Application tracked! Redirecting to official government portal...', 'success')
+    }
+  } catch (err) {
+    // Fallback: open apply_link directly if API tracking fails
+    const fallback = job.apply_link || job.official_website
+    if (fallback) window.open(fallback, '_blank', 'noopener,noreferrer')
+    uiStore.showToast('Redirecting to official job portal.', 'info')
   }
 }
+
+// ── Infinite scroll ───────────────────────────────────────────────────────
+const sentinelRef = ref(null)
+let observer = null
+
+function setupInfiniteScroll() {
+  if (observer) observer.disconnect()
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && jobStore.hasNextPage && !jobStore.loadingMore) {
+        jobStore.loadMoreJobs()
+      }
+    },
+    { threshold: 0.1 }
+  )
+  if (sentinelRef.value) observer.observe(sentinelRef.value)
+}
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+})
 </script>
 
 <template>
@@ -249,7 +282,16 @@ function handleApplyAction(job) {
         </div>
       </div>
 
+      <!-- Infinite scroll loading indicator -->
+      <div v-if="jobStore.loadingMore" class="load-more-spinner mt-4">
+        <div class="jobs-spinner small"></div>
+        <span>Loading more jobs...</span>
+      </div>
+
     </div>
+
+    <!-- Infinite scroll sentinel -->
+    <div ref="sentinelRef" class="scroll-sentinel" aria-hidden="true"></div>
 
     <!-- JOB DETAILED VIEW OVERLAY MODAL -->
     <Transition name="modal-fade">
@@ -310,6 +352,7 @@ function handleApplyAction(job) {
                 <div class="meta-section mt-3">
                   <div class="section-lbl">Application Lifespans</div>
                   <div class="lifespan-card mt-1">
+                    <div>Posted Date: <strong>{{ formatDate(selectedJob?.created_at) }}</strong></div>
                     <div>Start Date: <strong>{{ formatDate(selectedJob?.application_start_date) }}</strong></div>
                     <div>Last Date: <strong class="text-danger">{{ formatDate(selectedJob?.application_end_date) }}</strong></div>
                   </div>
@@ -320,9 +363,9 @@ function handleApplyAction(job) {
           </div>
 
           <!-- Modal Action Footer Buttons -->
-          <div class="modal-actions-footer mt-4">
-            <button type="button" class="btn-cancel" @click="closeJobDetails">Close Details</button>
-            <button type="button" class="btn-submit apply-link-btn" @click="handleApplyAction(selectedJob)">
+          <div class="modal-actions-footer mt-4" style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="button" class="btn btn-secondary" @click="closeJobDetails">Close Details</button>
+            <button type="button" class="btn btn-primary" @click="handleApplyAction(selectedJob)">
               <i class="ti ti-external-link"></i> Apply on Official Portal
             </button>
           </div>
@@ -872,5 +915,70 @@ function handleApplyAction(job) {
 .no-jobs-icon {
   font-size: 40px;
   color: var(--text2);
+}
+
+/* Glassmorphic Modal Popup Styles */
+.admin-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeInModal 0.2s ease-out;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.admin-modal-box {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md, 16px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  position: relative;
+  box-sizing: border-box;
+  animation: slideInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInModal {
+  from { transform: translateY(15px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.btn-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  color: var(--text2);
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast, 0.15s) ease;
+}
+
+.btn-close:hover {
+  color: var(--text);
 }
 </style>

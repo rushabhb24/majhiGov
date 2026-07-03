@@ -322,7 +322,24 @@ func runMigrations() error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_govt_jobs_active_end ON govt_jobs(is_active, application_end_date);`,
 		`CREATE INDEX IF NOT EXISTS idx_govt_jobs_qualification ON govt_jobs(education_qualification);`,
+
+		// Phase 4: Category-wise vacancy breakdown per government job
+		`ALTER TABLE govt_jobs ADD COLUMN IF NOT EXISTS category_vacancies JSONB DEFAULT '{"General":0,"OBC":0,"SC":0,"ST":0,"EWS":0,"Ex-Servicemen":0,"Women":0}';`,
+
+		// Phase 7: Track which jobs users have externally applied to via our portal
+		`CREATE TABLE IF NOT EXISTS user_applied_jobs (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+			job_id  INTEGER REFERENCES govt_jobs(id) ON DELETE CASCADE,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(user_id, job_id)
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_user_applied_jobs_user ON user_applied_jobs(user_id);`,
+
+		// Ensure notifications table has is_active guard for active users
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`,
 	}
+
 
 	for idx, query := range queries {
 		_, err := DB.Exec(query)

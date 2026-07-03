@@ -76,6 +76,40 @@ func GetSchemesHandler(w http.ResponseWriter, r *http.Request) {
 		queryBuilder.WriteString(" ORDER BY s.created_at DESC")
 	}
 
+	// Pagination — count total matching records first
+	countQuery := `SELECT COUNT(*) FROM schemes s JOIN scheme_categories c ON s.category_id = c.id WHERE s.is_active = true`
+	var countArgs []interface{}
+	var countBuilder strings.Builder
+	countBuilder.WriteString(`SELECT COUNT(*) FROM schemes s JOIN scheme_categories c ON s.category_id = c.id WHERE s.is_active = true`)
+	if category != "" && category != "All" {
+		countBuilder.WriteString(" AND (c.name = $1 OR c.name_hi = $1 OR c.name_mr = $1)")
+		countArgs = append(countArgs, category)
+	}
+	if search != "" {
+		if len(countArgs) > 0 {
+			countBuilder.WriteString(" AND (s.title ILIKE $2 OR s.description ILIKE $2 OR s.title_hi ILIKE $2 OR s.title_mr ILIKE $2)")
+		} else {
+			countBuilder.WriteString(" AND (s.title ILIKE $1 OR s.description ILIKE $1 OR s.title_hi ILIKE $1 OR s.title_mr ILIKE $1)")
+		}
+		countArgs = append(countArgs, "%"+search+"%")
+	}
+	_ = countQuery
+	var total int
+	db.DB.QueryRow(countBuilder.String(), countArgs...).Scan(&total)
+
+	// Parse pagination params (default page=1, limit=5)
+	page := 1
+	limit := 5
+	if p, err2 := strconv.Atoi(r.URL.Query().Get("page")); err2 == nil && p > 0 {
+		page = p
+	}
+	if l, err2 := strconv.Atoi(r.URL.Query().Get("limit")); err2 == nil && l > 0 && l <= 100 {
+		limit = l
+	}
+	offset := (page - 1) * limit
+	queryBuilder.WriteString(fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCount, argCount+1))
+	args = append(args, limit, offset)
+
 	rows, err := db.DB.Query(queryBuilder.String(), args...)
 	if err != nil {
 		http.Error(w, "Failed to query database: "+err.Error(), http.StatusInternalServerError)
@@ -100,7 +134,15 @@ func GetSchemesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(schemes)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": schemes,
+		"meta": map[string]interface{}{
+			"page":    page,
+			"limit":   limit,
+			"total":   total,
+			"hasNext": (page * limit) < total,
+		},
+	})
 }
 
 // GetSchemeDetailsHandler retrieves details for a single scheme along with linked documents, FAQs, and eligibility
@@ -414,6 +456,24 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Input validation
+	if !isValidEmail(req.Email) {
+		http.Error(w, "Invalid email address format", http.StatusBadRequest)
+		return
+	}
+	if !isValidPhone(req.Phone) {
+		http.Error(w, "Phone must be a valid 10-digit mobile number", http.StatusBadRequest)
+		return
+	}
+	if len(req.Password) < 8 {
+		http.Error(w, "Password must be at least 8 characters", http.StatusBadRequest)
+		return
+	}
+	if len(req.FullName) > 200 || len(req.Email) > 254 {
+		http.Error(w, "One or more fields exceed maximum allowed length", http.StatusBadRequest)
+		return
+	}
+
 	// Check email/phone uniqueness
 	var exists bool
 	queryCheck := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 OR phone = $2)"
@@ -542,10 +602,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decrypt sensitive Aadhaar number on the fly
+	// Decrypt Aadhaar — then mask it before any response is sent
 	decryptedAadhaar, err := db.Decrypt(aadhaarEncrypted)
 	if err == nil {
-		profile.Aadhaar = decryptedAadhaar
+		profile.Aadhaar = maskAadhaar(decryptedAadhaar)
 	}
 
 	// Issue JWT using middleware's centralized secret
@@ -571,13 +631,25 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set secure httpOnly cookie — JS cannot access this token, preventing XSS token theft
+	cookieSecure := os.Getenv("COOKIE_SECURE") != "false"
+	http.SetCookie(w, &http.Cookie{
+		Name:     "yojana_auth",
+		Value:    tokenString,
+		Path:     "/",
+		MaxAge:   expiryHours * 3600,
+		HttpOnly: true,
+		Secure:   cookieSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
+
 	profile.UserID = userID
 	profile.Email = email
 	profile.Phone = phone
+	profile.IsAdmin = isAdmin
 	resp := models.AuthResponse{
 		Success: true,
 		Message: "Login successful!",
-		Token:   tokenString,
 		Profile: &profile,
 	}
 
@@ -629,10 +701,10 @@ func GetUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decrypt Aadhaar number on the fly
+	// Decrypt Aadhaar — always return masked version, never full number
 	decryptedAadhaar, err := db.Decrypt(aadhaarEncrypted)
 	if err == nil {
-		profile.Aadhaar = decryptedAadhaar
+		profile.Aadhaar = maskAadhaar(decryptedAadhaar)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -793,10 +865,10 @@ func UpdateUserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decrypt sensitive Aadhaar number on the fly
+	// Decrypt Aadhaar — always return masked version, never full number
 	decryptedAadhaar, err := db.Decrypt(aadhaarEncrypted)
 	if err == nil {
-		profile.Aadhaar = decryptedAadhaar
+		profile.Aadhaar = maskAadhaar(decryptedAadhaar)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1096,4 +1168,64 @@ func translateTextViaGoogle(text string, target string) (string, error) {
 	}
 
 	return builder.String(), nil
+}
+
+// ─── Security & Validation Helpers ─────────────────────────────────────────────
+
+// maskAadhaar returns a masked Aadhaar showing only the last 4 digits.
+// The full number is NEVER sent to the frontend.
+func maskAadhaar(aadhaar string) string {
+	cleaned := strings.ReplaceAll(aadhaar, " ", "")
+	cleaned = strings.ReplaceAll(cleaned, "-", "")
+	if len(cleaned) < 4 {
+		return "XXXX-XXXX-XXXX"
+	}
+	last4 := cleaned[len(cleaned)-4:]
+	return "XXXX-XXXX-" + last4
+}
+
+// isValidEmail checks that the string has a basic valid email format
+func isValidEmail(email string) bool {
+	if len(email) == 0 || len(email) > 254 {
+		return false
+	}
+	atIdx := strings.Index(email, "@")
+	if atIdx <= 0 || atIdx == len(email)-1 {
+		return false
+	}
+	domain := email[atIdx+1:]
+	return strings.Contains(domain, ".")
+}
+
+// isValidPhone accepts 10-15 digit phone numbers (Indian mobile)
+func isValidPhone(phone string) bool {
+	digits := strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, phone)
+	return len(digits) >= 10 && len(digits) <= 15
+}
+
+// LogoutHandler clears the authentication cookie, logging the user out
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "yojana_auth",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   os.Getenv("COOKIE_SECURE") != "false",
+		SameSite: http.SameSiteLaxMode,
+	})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Logged out successfully.",
+	})
 }

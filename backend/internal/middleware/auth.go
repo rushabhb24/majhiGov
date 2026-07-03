@@ -20,7 +20,7 @@ const userIDKey contextKey = "user_id"
 
 // jwtSecret holds the loaded secret; initialized once
 var (
-	jwtSecret string
+	jwtSecret  string
 	secretOnce sync.Once
 )
 
@@ -40,22 +40,35 @@ func GetJWTSecret() string {
 	return jwtSecret
 }
 
-// AuthMiddleware validates JWT Bearer tokens and injects user_id into context
+// AuthMiddleware validates JWT from httpOnly cookie (primary) or Authorization header (fallback for dev/mobile).
+// This dual approach keeps mobile app and dev-tool compatibility while securing browser sessions via cookies.
 func AuthMiddleware(next http.Handler) http.Handler {
 	loadJWTSecret()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		var tokenString string
+
+		// Primary: read from httpOnly cookie (browser sessions)
+		if cookie, err := r.Cookie("yojana_auth"); err == nil {
+			tokenString = cookie.Value
+		}
+
+		// Fallback: Authorization header (mobile clients / dev tools / API testing)
+		if tokenString == "" {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			}
+		}
+
+		if tokenString == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Missing or invalid authorization header",
+				"error": "Authentication required: no session token found",
 			})
 			return
 		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
