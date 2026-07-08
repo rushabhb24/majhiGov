@@ -89,7 +89,7 @@ const getDaysRemaining = (endDateStr) => {
       </div>
 
       <button 
-        class="tw-bg-transparent tw-border-none tw-cursor-pointer tw-p-1 tw-text-muted-foreground hover:tw-text-primary hover:tw-scale-110 tw-transition-all tw-outline-none"
+        class="tw-bg-transparent tw-border-none tw-cursor-pointer tw-p-1 tw-text-slate-400 dark:tw-text-slate-300 hover:tw-text-primary hover:tw-scale-110 tw-transition-all tw-outline-none"
         @click="$emit('toggleBookmark', job)"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" :fill="isBookmarked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

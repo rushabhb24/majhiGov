@@ -121,11 +121,11 @@ function getCategoryName(scheme) {
         </section>
 
         <!-- Benefits Section -->
-        <section class="tw-flex tw-flex-col tw-gap-2 tw-bg-success/5 tw-border tw-border-success/15 tw-rounded-2xl tw-p-4">
-          <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-success tw-m-0">
+        <section class="tw-flex tw-flex-col tw-gap-2 tw-bg-emerald-500/10 tw-border tw-border-emerald-500/25 tw-rounded-2xl tw-p-4">
+          <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-emerald-600 dark:tw-text-emerald-400 tw-m-0">
             💰 {{ t.modalBenefits || 'Benefits' }}
           </h3>
-          <p class="tw-text-xs tw-text-success tw-font-semibold tw-m-0 tw-line-height-[1.5]">
+          <p class="tw-text-xs tw-text-emerald-700 dark:tw-text-emerald-300 tw-font-semibold tw-m-0 tw-line-height-[1.5]">
             {{ scheme.benefits }}
           </p>
         </section>

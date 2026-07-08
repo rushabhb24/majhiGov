@@ -47,12 +47,12 @@ onUnmounted(() => {
         @click.self="$emit('close')"
       >
         <div
-          class="tw-bg-card tw-text-card-foreground tw-border tw-border-solid tw-border-border tw-w-full tw-rounded-2xl tw-p-6 tw-relative tw-shadow-2xl tw-max-h-[90vh] tw-overflow-y-auto tw-flex tw-flex-col"
+          class="tw-bg-white dark:tw-bg-slate-900 tw-text-slate-900 dark:tw-text-white tw-border tw-border-solid tw-border-slate-200 dark:tw-border-slate-800 tw-w-full tw-rounded-2xl tw-p-6 tw-relative tw-shadow-2xl tw-max-h-[90vh] tw-overflow-y-auto tw-flex tw-flex-col"
           :style="{ maxWidth: maxWidth }"
         >
           <!-- Close button -->
           <button
-            class="tw-absolute tw-top-4 tw-right-4 tw-w-8 tw-height-8 tw-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-muted tw-text-muted-foreground hover:tw-bg-muted-foreground/20 tw-transition-colors tw-border-none tw-cursor-pointer"
+            class="tw-absolute tw-top-4 tw-right-4 tw-w-8 tw-h-8 tw-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-slate-100 dark:tw-bg-slate-800 tw-text-slate-500 dark:tw-text-slate-400 hover:tw-bg-slate-200 dark:hover:tw-bg-slate-700 tw-transition-colors tw-border-none tw-cursor-pointer"
             @click="$emit('close')"
             aria-label="Close modal"
           >

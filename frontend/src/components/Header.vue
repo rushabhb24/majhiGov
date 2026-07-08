@@ -91,15 +91,13 @@ function handleLogout() {
               { id: 'explorer', label: t.explorer || 'Explorer' },
               { id: 'eligibility', label: t.eligibility || 'Eligibility' },
               { id: 'jobs', label: t.govtJobsNav || 'Jobs' },
-              { id: 'companies', label: 'Companies' },
-              { id: 'internships', label: 'Internships' },
               { id: 'ai-assistant', label: t.aiAssistant || 'AI' },
               { id: 'career-resources', label: t.careerResources || 'Resources' }
             ]"
             :key="nav.id"
             @click="navigateTo(nav.id)"
             class="tw-px-4 tw-py-2 tw-rounded-full tw-text-xs tw-font-heading tw-font-bold tw-transition-all tw-border-none tw-cursor-pointer"
-            :class="activeTab === nav.id ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+            :class="activeTab === nav.id ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-slate-600 dark:tw-text-slate-300 hover:tw-text-primary hover:dark:tw-text-primary tw-bg-transparent'"
           >
             {{ nav.label }}
           </button>
@@ -108,7 +106,7 @@ function handleLogout() {
           <button
             @click="navigateTo('saved')"
             class="tw-px-4 tw-py-2 tw-rounded-full tw-text-xs tw-font-heading tw-font-bold tw-transition-all tw-border-none tw-cursor-pointer tw-flex tw-items-center tw-gap-1.5"
-            :class="activeTab === 'saved' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+            :class="activeTab === 'saved' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-slate-600 dark:tw-text-slate-300 hover:tw-text-primary hover:dark:tw-text-primary tw-bg-transparent'"
           >
             <span>{{ t.saved || 'Saved' }}</span>
             <span 
@@ -124,7 +122,7 @@ function handleLogout() {
             v-if="user"
             @click="navigateTo('applications')"
             class="tw-px-4 tw-py-2 tw-rounded-full tw-text-xs tw-font-heading tw-font-bold tw-transition-all tw-border-none tw-cursor-pointer"
-            :class="activeTab === 'applications' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+            :class="activeTab === 'applications' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-slate-600 dark:tw-text-slate-300 hover:tw-text-primary hover:dark:tw-text-primary tw-bg-transparent'"
           >
             {{ t.myApplications || 'Applications' }}
           </button>
@@ -239,15 +237,13 @@ function handleLogout() {
             { id: 'explorer', label: t.explorer || 'Explorer' },
             { id: 'eligibility', label: t.eligibility || 'Eligibility' },
             { id: 'jobs', label: t.govtJobsNav || 'Jobs' },
-            { id: 'companies', label: 'Companies' },
-            { id: 'internships', label: 'Internships' },
             { id: 'ai-assistant', label: t.aiAssistant || 'AI' },
             { id: 'career-resources', label: t.careerResources || 'Resources' }
           ]"
           :key="nav.id"
           @click="navigateTo(nav.id)"
           class="tw-w-full tw-text-left tw-px-4 tw-py-2.5 tw-rounded-xl tw-text-sm tw-font-heading tw-font-bold tw-border-none tw-cursor-pointer"
-          :class="activeTab === nav.id ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+          :class="activeTab === nav.id ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-slate-700 dark:tw-text-slate-200 hover:tw-text-primary hover:dark:tw-text-primary tw-bg-transparent'"
         >
           {{ nav.label }}
         </button>
@@ -255,7 +251,7 @@ function handleLogout() {
         <button
           @click="navigateTo('saved')"
           class="tw-w-full tw-text-left tw-px-4 tw-py-2.5 tw-rounded-xl tw-text-sm tw-font-heading tw-font-bold tw-border-none tw-cursor-pointer tw-flex tw-items-center tw-justify-between"
-          :class="activeTab === 'saved' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+          :class="activeTab === 'saved' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-slate-700 dark:tw-text-slate-200 hover:tw-text-primary hover:dark:tw-text-primary tw-bg-transparent'"
         >
           <span>{{ t.saved || 'Saved' }}</span>
           <span 
@@ -270,7 +266,7 @@ function handleLogout() {
           v-if="user"
           @click="navigateTo('applications')"
           class="tw-w-full tw-text-left tw-px-4 tw-py-2.5 tw-rounded-xl tw-text-sm tw-font-heading tw-font-bold tw-border-none tw-cursor-pointer"
-          :class="activeTab === 'applications' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+          :class="activeTab === 'applications' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-slate-700 dark:tw-text-slate-200 hover:tw-text-primary hover:dark:tw-text-primary tw-bg-transparent'"
         >
           {{ t.myApplications || 'Applications' }}
         </button>

@@ -65,7 +65,7 @@ function formatDate(dateStr) {
       </AppBadge>
       
       <button 
-        class="tw-bg-transparent tw-border-none tw-cursor-pointer tw-p-1 tw-flex tw-items-center tw-justify-center tw-text-muted-foreground hover:tw-text-primary hover:tw-scale-110 tw-transition-all tw-outline-none"
+        class="tw-bg-transparent tw-border-none tw-cursor-pointer tw-p-1 tw-flex tw-items-center tw-justify-center tw-text-slate-400 dark:tw-text-slate-300 hover:tw-text-primary hover:tw-scale-110 tw-transition-all tw-outline-none"
         @click.stop="emit('toggleBookmark', scheme.id)"
         :title="savedSchemeIds.includes(scheme.id) ? 'Remove Bookmark' : 'Save Scheme'"
       >
@@ -94,9 +94,9 @@ function formatDate(dateStr) {
     </p>
 
     <!-- Green Benefit Banner -->
-    <div class="tw-bg-success/5 tw-border tw-border-success/15 tw-rounded-xl tw-p-3 tw-mb-4 tw-flex tw-gap-2 tw-items-start tw-text-xs tw-leading-snug">
-      <span class="tw-text-success tw-font-black">Benefit:</span>
-      <span class="tw-text-success tw-font-semibold">{{ scheme.benefits }}</span>
+    <div class="tw-bg-emerald-500/10 tw-border tw-border-emerald-500/20 tw-rounded-xl tw-p-3 tw-mb-4 tw-flex tw-gap-2 tw-items-start tw-text-xs tw-leading-snug">
+      <span class="tw-text-emerald-600 dark:tw-text-emerald-400 tw-font-black">Benefit:</span>
+      <span class="tw-text-emerald-700 dark:tw-text-emerald-300 tw-font-semibold">{{ scheme.benefits }}</span>
     </div>
 
     <!-- Calendar Apply Date -->

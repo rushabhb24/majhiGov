@@ -552,7 +552,7 @@ function processResume(file) {
               </div>
               <div>
                 <AppLabel>Total Vacancies</AppLabel>
-                <div class="tw-text-xs tw-text-success tw-font-bold">{{ selectedJob.vacancies?.toLocaleString() }} Openings</div>
+                <div class="tw-text-xs tw-text-emerald-600 dark:tw-text-emerald-400 tw-font-bold">{{ selectedJob.vacancies?.toLocaleString() }} Openings</div>
               </div>
             </div>
 
@@ -565,7 +565,7 @@ function processResume(file) {
                     :key="idx" 
                     class="tw-flex tw-items-center tw-gap-2 tw-p-2 tw-bg-muted/40 tw-rounded-lg tw-text-[11px] tw-text-muted-foreground"
                   >
-                    <span class="tw-text-success">✓</span>
+                    <span class="tw-text-emerald-500">✓</span>
                     <span>{{ doc }}</span>
                   </div>
                 </div>

@@ -18,3 +18,9 @@
     hsl(var(--india-green)) 66.6% 100%);
 }
 .shadow-glow { box-shadow: var(--shadow-glow); }
+
+button, select, input, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
