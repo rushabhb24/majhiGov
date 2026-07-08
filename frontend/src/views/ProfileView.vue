@@ -3,6 +3,12 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
 import { useI18n } from 'vue-i18n'
+import AppCard from '../components/ui/AppCard.vue'
+import AppBadge from '../components/ui/AppBadge.vue'
+import AppButton from '../components/ui/AppButton.vue'
+import AppInput from '../components/ui/AppInput.vue'
+import AppLabel from '../components/ui/AppLabel.vue'
+import AppSelect from '../components/ui/AppSelect.vue'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -54,298 +60,252 @@ onMounted(() => {
     authStore.fetchUserProfile()
   }
 })
+
+function getInitials(name) {
+  if (!name) return 'C'
+  const parts = name.split(' ')
+  if (parts.length > 1) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.substring(0, 2).toUpperCase()
+}
 </script>
 
 <template>
-  <div class="tab-content animate-fade">
-    <div class="card filter-panel">
-      <div class="profile-header-row">
-        <div>
-          <h2 class="section-title">{{ t('myProfile') }}</h2>
-          <p class="text-muted">{{ t('demographicDetails') }}</p>
+  <div class="tw-max-w-4xl tw-mx-auto tw-px-4 tw-sm:px-6 tw-lg:px-8 tw-py-8">
+    
+    <!-- Header panel -->
+    <div class="glass tw-p-6 tw-rounded-2xl tw-mb-6">
+      <div class="tw-flex tw-justify-between tw-items-center tw-flex-wrap tw-gap-4">
+        <div class="tw-flex tw-items-center tw-gap-4">
+          <!-- Monogram avatar -->
+          <div class="tw-w-14 tw-h-14 tw-rounded-2xl tw-bg-primary tw-text-white tw-font-heading tw-font-black tw-text-xl tw-flex tw-items-center tw-justify-center tw-shadow-glow">
+            {{ authStore.userProfile ? getInitials(authStore.userProfile.full_name) : 'C' }}
+          </div>
+          <div>
+            <h2 class="tw-font-heading tw-font-bold tw-text-xl tw-text-foreground tw-m-0">
+              {{ authStore.userProfile ? authStore.userProfile.full_name : t('myProfile') }}
+            </h2>
+            <p class="tw-text-xs tw-text-muted-foreground tw-mt-1 tw-m-0">
+              {{ t('demographicDetails') || 'Your citizen verification demographics.' }}
+            </p>
+          </div>
         </div>
-        <div class="profile-actions">
-          <button v-if="!isEditing" class="btn btn-primary" @click="startEditing">
-            ✏️ {{ t('editProfile') }}
-          </button>
+        
+        <div class="tw-flex tw-gap-2">
+          <AppButton v-if="!isEditing" variant="primary" size="sm" @click="startEditing">
+            ✏️ {{ t('editProfile') || 'Edit Profile' }}
+          </AppButton>
           <template v-else>
-            <button class="btn btn-secondary" @click="cancelEditing" :disabled="saving">
-              {{ t('cancelEdit') }}
-            </button>
-            <button class="btn btn-primary" @click="saveProfile" :disabled="saving">
-              {{ saving ? t('submitting') : t('saveProfile') }}
-            </button>
+            <AppButton variant="secondary" size="sm" @click="cancelEditing" :disabled="saving">
+              {{ t('cancelEdit') || 'Cancel' }}
+            </AppButton>
+            <AppButton variant="primary" size="sm" @click="saveProfile" :disabled="saving">
+              {{ saving ? t('submitting') : (t('saveProfile') || 'Save Profile') }}
+            </AppButton>
           </template>
         </div>
       </div>
     </div>
 
     <!-- Profile Display / Edit Form -->
-    <div v-if="authStore.userProfile" class="profile-card card mt-4">
+    <div v-if="authStore.userProfile">
+      
       <!-- View Mode -->
-      <div v-if="!isEditing" class="profile-grid">
-        <div class="profile-section">
-          <h3 class="profile-section-title">{{ t('personalInfo') }}</h3>
-          <div class="profile-field">
-            <span class="field-label">{{ t('fullNameLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.full_name }}</span>
+      <div v-if="!isEditing" class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-6">
+        
+        <!-- Left: Personal info -->
+        <AppCard class="tw-flex tw-flex-col tw-gap-4">
+          <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0 tw-pb-2 tw-border-b tw-border-border/50">
+            {{ t('personalInfo') || 'Personal Information' }}
+          </h3>
+          
+          <div class="tw-flex tw-flex-col tw-gap-3 tw-text-xs">
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('fullNameLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.full_name }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('dobLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.date_of_birth ? new Date(authStore.userProfile.date_of_birth).toLocaleDateString() : '-' }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('genderLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.gender }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('stateLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.state }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('districtLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.district }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2">
+              <span class="tw-text-muted-foreground">{{ t('aadhaarLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.aadhaar || 'Not Provided' }}</strong>
+            </div>
           </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('dobLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.date_of_birth ? new Date(authStore.userProfile.date_of_birth).toLocaleDateString() : '-' }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('genderLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.gender }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('stateLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.state }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('districtLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.district }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('aadhaarLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.aadhaar || 'Not Provided' }}</span>
-          </div>
-        </div>
+        </AppCard>
 
-        <div class="profile-section">
-          <h3 class="profile-section-title">{{ t('demographicDetails') }}</h3>
-          <div class="profile-field">
-            <span class="field-label">{{ t('casteLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.caste_category }}</span>
+        <!-- Right: Demographic details -->
+        <AppCard class="tw-flex tw-flex-col tw-gap-4">
+          <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0 tw-pb-2 tw-border-b tw-border-border/50">
+            {{ t('demographicDetails') || 'Demographics & Socioeconomics' }}
+          </h3>
+          
+          <div class="tw-flex tw-flex-col tw-gap-3 tw-text-xs">
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('casteLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.caste_category }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('incomeLabel') }}</span>
+              <strong class="tw-text-foreground">₹{{ Number(authStore.userProfile.annual_income).toLocaleString() }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('occupationLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.occupation }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('employeeTypeLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.employee_type }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2 tw-border-b tw-border-border/30">
+              <span class="tw-text-muted-foreground">{{ t('educationLabel') }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.education_level }}</strong>
+            </div>
+            <div class="tw-flex tw-justify-between tw-py-2">
+              <span class="tw-text-muted-foreground">{{ t('disabilityLabel') || 'Differently-Abled' }}</span>
+              <strong class="tw-text-foreground">{{ authStore.userProfile.is_disabled ? '✅ Yes' : '❌ No' }}</strong>
+            </div>
           </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('incomeLabel') }}</span>
-            <span class="field-value">₹{{ Number(authStore.userProfile.annual_income).toLocaleString() }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('occupationLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.occupation }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('employeeTypeLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.employee_type }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('educationLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.education_level }}</span>
-          </div>
-          <div class="profile-field">
-            <span class="field-label">{{ t('disabilityLabel') }}</span>
-            <span class="field-value">{{ authStore.userProfile.is_disabled ? '✅ Yes' : '❌ No' }}</span>
-          </div>
-        </div>
+        </AppCard>
+
       </div>
 
-      <!-- Edit Mode -->
-      <form v-else @submit.prevent="saveProfile" class="profile-edit-form">
-        <div class="profile-section">
-          <h3 class="profile-section-title">{{ t('personalInfo') }}</h3>
+      <!-- Edit Mode Form -->
+      <form v-else @submit.prevent="saveProfile" class="tw-flex tw-flex-col tw-gap-6">
+        
+        <AppCard class="tw-flex tw-flex-col tw-gap-4">
+          <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0 tw-pb-2 tw-border-b tw-border-border/50">
+            {{ t('personalInfo') }}
+          </h3>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">{{ t('fullNameLabel') }} *</label>
-              <input v-model="editForm.full_name" type="text" class="form-control" required />
+          <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
+            <div>
+              <AppLabel>{{ t('fullNameLabel') }} *</AppLabel>
+              <AppInput v-model="editForm.full_name" type="text" required />
             </div>
-            <div class="form-group">
-              <label class="form-label">{{ t('dobLabel') }} *</label>
-              <input v-model="editForm.date_of_birth" type="date" class="form-control" required />
+            <div>
+              <AppLabel>{{ t('dobLabel') }} *</AppLabel>
+              <AppInput v-model="editForm.date_of_birth" type="date" required />
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">{{ t('genderLabel') }} *</label>
-              <select v-model="editForm.gender" class="form-control" required>
+            <div>
+              <AppLabel>{{ t('genderLabel') }} *</AppLabel>
+              <AppSelect v-model="editForm.gender" required>
                 <option value="Male">{{ t('maleOpt') }}</option>
                 <option value="Female">{{ t('femaleOpt') }}</option>
                 <option value="Other">{{ t('otherOpt') }}</option>
-              </select>
+              </AppSelect>
             </div>
-            <div class="form-group">
-              <label class="form-label">{{ t('casteLabel') }} *</label>
-              <select v-model="editForm.caste_category" class="form-control" required>
+            <div>
+              <AppLabel>{{ t('casteLabel') }} *</AppLabel>
+              <AppSelect v-model="editForm.caste_category" required>
                 <option value="General">General / Open</option>
                 <option value="OBC">OBC</option>
                 <option value="SC">SC</option>
                 <option value="ST">ST</option>
-              </select>
+              </AppSelect>
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">{{ t('stateLabel') }} *</label>
-              <select v-model="editForm.state" class="form-control" required>
+            <div>
+              <AppLabel>{{ t('stateLabel') }} *</AppLabel>
+              <AppSelect v-model="editForm.state" required>
                 <option value="Maharashtra">Maharashtra</option>
                 <option value="Gujarat">Gujarat</option>
                 <option value="Madhya Pradesh">Madhya Pradesh</option>
                 <option value="Karnataka">Karnataka</option>
                 <option value="Delhi">Delhi</option>
                 <option value="All">All India</option>
-              </select>
+              </AppSelect>
             </div>
-            <div class="form-group">
-              <label class="form-label">{{ t('districtLabel') }} *</label>
-              <input v-model="editForm.district" type="text" class="form-control" required />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">{{ t('aadhaarLabel') }} *</label>
-              <input v-model="editForm.aadhaar" type="text" class="form-control" pattern="[0-9]{12}" title="Aadhaar number must be exactly 12 digits" required />
+            <div>
+              <AppLabel>{{ t('districtLabel') }} *</AppLabel>
+              <AppInput v-model="editForm.district" type="text" required />
             </div>
           </div>
-        </div>
 
-        <hr class="divider" />
-
-        <div class="profile-section">
-          <h3 class="profile-section-title">{{ t('demographicDetails') }}</h3>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">{{ t('incomeLabel') }} *</label>
-              <input v-model="editForm.annual_income" type="number" class="form-control" required />
+          <div class="tw-grid tw-grid-cols-1 tw-gap-4">
+            <div>
+              <AppLabel>{{ t('aadhaarLabel') }} *</AppLabel>
+              <AppInput v-model="editForm.aadhaar" type="text" pattern="[0-9]{12}" title="Aadhaar number must be exactly 12 digits" required />
             </div>
-            <div class="form-group">
-              <label class="form-label">{{ t('occupationLabel') }} *</label>
-              <select v-model="editForm.occupation" class="form-control" required>
+          </div>
+        </AppCard>
+
+        <AppCard class="tw-flex tw-flex-col tw-gap-4">
+          <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0 tw-pb-2 tw-border-b tw-border-border/50">
+            {{ t('demographicDetails') }}
+          </h3>
+
+          <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
+            <div>
+              <AppLabel>{{ t('incomeLabel') }} *</AppLabel>
+              <AppInput v-model.number="editForm.annual_income" type="number" required />
+            </div>
+            <div>
+              <AppLabel>{{ t('occupationLabel') }} *</AppLabel>
+              <AppSelect v-model="editForm.occupation" required>
                 <option value="Farmer">Farmer</option>
                 <option value="Student">Student</option>
                 <option value="Business Owner">Business Owner</option>
                 <option value="Unemployed">Unemployed</option>
                 <option value="Retired">Retired / Senior Citizen</option>
-              </select>
+              </AppSelect>
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">{{ t('employeeTypeLabel') }} *</label>
-              <select v-model="editForm.employee_type" class="form-control" required>
+            <div>
+              <AppLabel>{{ t('employeeTypeLabel') }} *</AppLabel>
+              <AppSelect v-model="editForm.employee_type" required>
                 <option value="Unemployed">Unemployed</option>
                 <option value="Private Employee">Private Sector</option>
                 <option value="Government Employee">Government Sector</option>
                 <option value="Self Employed">Self Employed</option>
-              </select>
+              </AppSelect>
             </div>
-            <div class="form-group">
-              <label class="form-label">{{ t('educationLabel') }} *</label>
-              <select v-model="editForm.education_level" class="form-control" required>
+            <div>
+              <AppLabel>{{ t('educationLabel') }} *</AppLabel>
+              <AppSelect v-model="editForm.education_level" required>
                 <option value="10th Pass">10th Standard or lower</option>
                 <option value="12th Pass">12th Standard</option>
                 <option value="Undergraduate">Undergraduate Degree</option>
                 <option value="Graduate">Graduate / Master Degree</option>
                 <option value="Post Graduate">Doctorate / Specialist</option>
-              </select>
+              </AppSelect>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">{{ t('disabilityLabel') }}</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input
-                type="checkbox"
-                id="editIsDisabled"
-                v-model="editForm.is_disabled"
-                style="width: 20px; height: 20px; cursor: pointer;"
-              />
-              <label for="editIsDisabled" style="cursor: pointer; font-size: 0.9rem;">Yes, I am differently-abled</label>
-            </div>
+          <div class="tw-flex tw-items-center tw-gap-2.5 tw-mt-2">
+            <input
+              type="checkbox"
+              id="editIsDisabled"
+              v-model="editForm.is_disabled"
+              class="tw-w-5 tw-h-5 tw-cursor-pointer"
+            />
+            <label for="editIsDisabled" class="tw-text-xs tw-font-bold tw-text-foreground tw-cursor-pointer">
+              Yes, I am differently-abled / Haan, mai divyang hu
+            </label>
           </div>
-        </div>
+        </AppCard>
+
       </form>
+
     </div>
 
-    <!-- Loading state -->
-    <div v-else class="loading-state text-center mt-4 card">
-      <div class="spinner"></div>
-      <p class="mt-4">{{ t('loading') }}</p>
+    <!-- Loading State -->
+    <div v-else class="tw-text-center tw-py-12 tw-flex tw-flex-col tw-items-center tw-gap-3">
+      <div class="tw-w-8 tw-h-8 tw-border-3 tw-border-muted tw-border-t-primary tw-rounded-full tw-animate-spin"></div>
+      <p class="tw-text-xs tw-text-muted-foreground">{{ t('loading') || 'Loading Profile...' }}</p>
     </div>
+
   </div>
 </template>
-
-<style scoped>
-.animate-fade {
-  animation: fadeIn 0.4s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.profile-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.profile-card {
-  padding: 28px;
-}
-
-.profile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 32px;
-}
-
-.profile-section-title {
-  font-family: var(--font-heading);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--clr-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--clr-border);
-}
-
-.profile-field {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--clr-border);
-}
-
-.profile-field:last-child {
-  border-bottom: none;
-}
-
-.field-label {
-  font-size: 0.88rem;
-  color: var(--clr-text-muted);
-  font-weight: 500;
-}
-
-.field-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--clr-text-main);
-}
-
-.profile-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.profile-edit-form .profile-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-</style>

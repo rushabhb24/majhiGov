@@ -1,11 +1,16 @@
 <script setup>
-import { ref } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { ref } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import ThemeToggle from './ui/ThemeToggle.vue'
+import LanguageSwitcher from './ui/LanguageSwitcher.vue'
+import RuralModeToggle from './ui/RuralModeToggle.vue'
+import AppButton from './ui/AppButton.vue'
 
-const authStore = useAuthStore();
-const showNotifications = ref(false);
+const authStore = useAuthStore()
+const showNotifications = ref(false)
+const mobileMenuOpen = ref(false)
 
-defineProps({
+const props = defineProps({
   activeTab: {
     type: String,
     required: true
@@ -34,7 +39,7 @@ defineProps({
     type: Object,
     default: null
   }
-});
+})
 
 const emit = defineEmits([
   'update:activeTab',
@@ -43,519 +48,280 @@ const emit = defineEmits([
   'update:theme',
   'loginClick',
   'logout'
-]);
-
-const mobileMenuOpen = ref(false);
+])
 
 function navigateTo(tab) {
-  emit('update:activeTab', tab);
-  mobileMenuOpen.value = false;
+  emit('update:activeTab', tab)
+  mobileMenuOpen.value = false
 }
 
 function handleLogout() {
-  emit('logout');
-  mobileMenuOpen.value = false;
+  emit('logout')
+  mobileMenuOpen.value = false
 }
 </script>
 
 <template>
-  <header class="header">
-    <div class="header-container">
-      <!-- Branding Logo -->
-      <div class="logo" @click="navigateTo('explorer')">
-        <div class="logo-icon">M</div>
-        <div class="logo-text">MajhiGov <span class="accent-text">Portal</span></div>
-      </div>
+  <header class="glass tw-sticky tw-top-0 tw-z-[999] tw-w-full">
+    <!-- Tricolor Top Bar -->
+    <div class="tricolor-bar tw-h-[4px] tw-w-full"></div>
 
-      <!-- Unified Nav + Settings Row (Desktop) -->
-      <div class="nav-row nav-desktop">
-        <!-- Navigation Links -->
-        <nav class="nav-menu">
-          <div 
-            :class="['nav-link', { active: activeTab === 'explorer' }]" 
-            @click="navigateTo('explorer')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span>{{ t.explorer }}</span>
+    <div class="tw-max-w-7xl tw-mx-auto tw-px-4 tw-sm:px-6 tw-lg:px-8">
+      <div class="tw-flex tw-items-center tw-justify-between tw-h-16">
+        
+        <!-- Left: Logo -->
+        <div class="tw-flex-shrink-0 tw-flex tw-items-center tw-cursor-pointer" @click="navigateTo('explorer')">
+          <div class="tw-w-10 tw-h-10 tw-rounded-xl tw-bg-primary tw-text-white tw-font-heading tw-font-extrabold tw-flex tw-items-center tw-justify-center tw-text-xl tw-shadow-glow">
+            M
           </div>
-          <div 
-            :class="['nav-link', { active: activeTab === 'eligibility' }]" 
-            @click="navigateTo('eligibility')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-            <span>{{ t.eligibility }}</span>
+          <div class="tw-ml-3">
+            <span class="tw-block tw-font-heading tw-font-extrabold tw-text-lg tw-tracking-tight tw-text-foreground">
+              MajhiGov
+            </span>
+            <span class="tw-block tw-text-[9px] tw-font-bold tw-text-primary tw-tracking-widest tw-uppercase">
+              Yojana &amp; Careers
+            </span>
           </div>
-          <div 
-            :class="['nav-link', { active: activeTab === 'saved' }]" 
+        </div>
+
+        <!-- Center: Navigation links (Desktop) -->
+        <nav class="tw-hidden md:tw-flex tw-space-x-1.5 tw-mx-6">
+          <button
+            v-for="nav in [
+              { id: 'explorer', label: t.explorer || 'Explorer' },
+              { id: 'eligibility', label: t.eligibility || 'Eligibility' },
+              { id: 'jobs', label: t.govtJobsNav || 'Jobs' },
+              { id: 'companies', label: 'Companies' },
+              { id: 'internships', label: 'Internships' },
+              { id: 'ai-assistant', label: t.aiAssistant || 'AI' },
+              { id: 'career-resources', label: t.careerResources || 'Resources' }
+            ]"
+            :key="nav.id"
+            @click="navigateTo(nav.id)"
+            class="tw-px-4 tw-py-2 tw-rounded-full tw-text-xs tw-font-heading tw-font-bold tw-transition-all tw-border-none tw-cursor-pointer"
+            :class="activeTab === nav.id ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+          >
+            {{ nav.label }}
+          </button>
+
+          <!-- Saved with badge count -->
+          <button
             @click="navigateTo('saved')"
+            class="tw-px-4 tw-py-2 tw-rounded-full tw-text-xs tw-font-heading tw-font-bold tw-transition-all tw-border-none tw-cursor-pointer tw-flex tw-items-center tw-gap-1.5"
+            :class="activeTab === 'saved' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            <span>{{ t.saved }}</span>
-            <span v-if="savedCount > 0" class="badge">{{ savedCount }}</span>
-          </div>
-          <div 
-            :class="['nav-link', { active: activeTab === 'jobs' }]" 
-            @click="navigateTo('jobs')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-            <span>{{ t.govtJobsNav || 'Govt Jobs' }}</span>
-          </div>
-          <div 
+            <span>{{ t.saved || 'Saved' }}</span>
+            <span 
+              class="tw-text-[10px] tw-px-1.5 tw-py-0.5 tw-rounded-full"
+              :class="activeTab === 'saved' ? 'tw-bg-black tw-text-primary' : 'tw-bg-primary tw-text-white'"
+            >
+              {{ savedCount }}
+            </span>
+          </button>
+
+          <!-- Citizen Applications -->
+          <button
             v-if="user"
-            :class="['nav-link', { active: activeTab === 'applications' }]" 
             @click="navigateTo('applications')"
+            class="tw-px-4 tw-py-2 tw-rounded-full tw-text-xs tw-font-heading tw-font-bold tw-transition-all tw-border-none tw-cursor-pointer"
+            :class="activeTab === 'applications' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_14px_rgba(249,115,22,0.6)] tw-font-black' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            <span>{{ t.myApplications || 'Applications' }}</span>
-          </div>
-          <div 
-            v-if="user"
-            :class="['nav-link', { active: activeTab === 'profile' }]" 
-            @click="navigateTo('profile')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>{{ t.myProfile || 'Profile' }}</span>
-          </div>
-          <div 
-            v-if="user && authStore.isAdmin"
-            :class="['nav-link', { active: activeTab === 'admin' }]" 
-            @click="navigateTo('admin')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-            <span>Admin</span>
-          </div>
+            {{ t.myApplications || 'Applications' }}
+          </button>
         </nav>
 
-        <!-- Divider -->
-        <div class="nav-divider"></div>
+        <!-- Right Tools: Switchers, Notifications, Profile -->
+        <div class="tw-hidden md:tw-flex tw-items-center tw-gap-3">
+          
+          <RuralModeToggle />
+          <ThemeToggle />
+          <LanguageSwitcher />
 
-        <!-- Settings inline with nav -->
-        <div class="nav-settings">
-          <!-- Language Selector -->
-          <select 
-            class="form-control select-lang" 
-            :value="currentLanguage"
-            @change="emit('update:currentLanguage', $event.target.value)"
-          >
-            <option value="en">EN</option>
-            <option value="hi">हि</option>
-            <option value="mr">मरा</option>
-          </select>
-
-          <!-- Theme Toggle -->
-          <button 
-            class="btn-icon" 
-            @click="emit('update:theme', theme === 'dark' ? 'light' : 'dark')"
-            :title="theme === 'dark' ? 'Light Mode' : 'Dark Mode'"
-          >
-            <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.77" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-          </button>
-
-          <!-- Rural Mode Toggle -->
-          <button 
-            :class="['btn-icon', { active: ruralMode }]" 
-            @click="emit('update:ruralMode', !ruralMode)"
-            :title="ruralMode ? (t.normalMode || 'Normal Mode') : (t.ruralMode || 'Rural Mode')"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-          </button>
-
-          <!-- Notifications Bell -->
-          <div v-if="user" class="notifications-wrapper" style="position: relative;">
-            <button class="btn-icon" @click="showNotifications = !showNotifications" title="Notifications">
+          <!-- Notifications Bell dropdown -->
+          <div v-if="user" class="tw-relative">
+            <button 
+              class="tw-w-9 tw-h-9 tw-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-muted/80 hover:tw-bg-muted tw-text-muted-foreground hover:tw-text-foreground tw-transition-colors tw-border-none tw-cursor-pointer tw-relative"
+              @click="showNotifications = !showNotifications"
+              title="Notifications"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              <span v-if="authStore.unreadCount > 0" class="badge badge-danger" style="position: absolute; top: 0; right: 0; transform: translate(25%, -25%); font-size: 0.6rem; padding: 2px 5px;">{{ authStore.unreadCount }}</span>
+              <span v-if="authStore.unreadCount > 0" class="tw-absolute tw-top-0.5 tw-right-0.5 tw-flex tw-h-2 tw-w-2">
+                <span class="tw-animate-ping tw-absolute tw-inline-flex tw-h-full tw-w-full tw-rounded-full tw-bg-destructive tw-opacity-75"></span>
+                <span class="tw-relative tw-inline-flex tw-rounded-full tw-h-2 tw-w-2 tw-bg-destructive"></span>
+              </span>
             </button>
 
-            <!-- Dropdown -->
-            <div v-if="showNotifications" class="notifications-dropdown card" style="position: absolute; top: 100%; right: 0; width: 300px; max-height: 400px; overflow-y: auto; z-index: 1000; margin-top: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h4 style="margin:0; font-size: 0.95rem;">Notifications</h4>
-                <button v-if="authStore.unreadCount > 0" @click="authStore.markNotificationsRead()" style="background: none; border: none; color: var(--clr-primary); cursor: pointer; font-size: 0.8rem;">Mark all read</button>
+            <!-- Dropdown box -->
+            <div 
+              v-if="showNotifications" 
+              class="glass tw-absolute tw-right-0 tw-mt-2 tw-w-80 tw-rounded-2xl tw-p-4 tw-z-[99] tw-max-h-96 tw-overflow-y-auto"
+            >
+              <div class="tw-flex tw-justify-between tw-items-center tw-mb-3">
+                <h4 class="tw-font-heading tw-font-bold tw-text-sm tw-text-foreground tw-m-0">Notifications</h4>
+                <button 
+                  v-if="authStore.unreadCount > 0" 
+                  @click="authStore.markNotificationsRead()" 
+                  class="tw-bg-transparent tw-border-none tw-text-primary tw-font-bold tw-text-xs tw-cursor-pointer hover:tw-underline"
+                >
+                  Mark all read
+                </button>
               </div>
-              <div v-if="authStore.notifications.length === 0" style="text-align: center; color: var(--clr-text-muted); font-size: 0.85rem; padding: 20px 0;">
+              <div v-if="authStore.notifications.length === 0" class="tw-text-center tw-text-muted-foreground tw-text-xs tw-py-6">
                 No notifications
               </div>
-              <div v-else style="display: flex; flex-direction: column; gap: 8px;">
-                <div v-for="(notif, index) in authStore.notifications" :key="index" :style="{ background: notif.is_read ? 'transparent' : 'var(--clr-primary-light)', padding: '10px', borderRadius: '8px', border: '1px solid var(--clr-border)' }">
-                  <div style="font-weight: 600; font-size: 0.85rem;">{{ notif.title }}</div>
-                  <div style="font-size: 0.8rem; color: var(--clr-text-muted); margin-top: 4px;">{{ notif.message }}</div>
+              <div v-else class="tw-flex tw-flex-col tw-gap-2">
+                <div 
+                  v-for="(notif, idx) in authStore.notifications" 
+                  :key="idx" 
+                  class="tw-p-2.5 tw-rounded-xl tw-border tw-border-border"
+                  :class="notif.is_read ? 'tw-bg-transparent' : 'tw-bg-primary/5'"
+                >
+                  <div class="tw-font-semibold tw-text-xs tw-text-foreground">{{ notif.title }}</div>
+                  <div class="tw-text-[11px] tw-text-muted-foreground tw-mt-1">{{ notif.message }}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Login / User Badge -->
-          <div v-if="user" class="user-profile-badge">
-            <div class="user-avatar" :title="user.full_name">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            </div>
-            <span class="user-name-text">{{ user.full_name.split(' ')[0] }}</span>
-            <button class="btn-logout" @click="handleLogout" :title="t.logout || 'Logout'">
+          <!-- User Badge / Profile / Login Button -->
+          <div v-if="user" class="tw-flex tw-items-center tw-gap-2 tw-bg-muted/80 tw-pl-3 tw-pr-1 tw-py-1 tw-rounded-full">
+            <span class="tw-text-xs tw-font-bold tw-text-foreground tw-cursor-pointer" @click="navigateTo('profile')">
+              {{ user.full_name.split(' ')[0] }}
+            </span>
+            <button 
+              class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-primary tw-text-white tw-flex tw-items-center tw-justify-center tw-border-none tw-cursor-pointer"
+              @click="navigateTo('profile')"
+              title="View Profile"
+            >
+              👤
+            </button>
+            <button 
+              class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-transparent tw-text-muted-foreground hover:tw-text-destructive tw-flex tw-items-center tw-justify-center tw-border-none tw-cursor-pointer tw-transition-colors"
+              @click="handleLogout"
+              :title="t.logout || 'Logout'"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             </button>
           </div>
-          <button v-else class="btn-login" @click="emit('loginClick')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-            <span>{{ t.loginRegister || 'Login' }}</span>
-          </button>
-        </div>
-      </div>
 
-      <!-- Hamburger Button (mobile only) -->
-      <button 
-        class="btn-hamburger" 
-        @click="mobileMenuOpen = !mobileMenuOpen"
-        :class="{ 'is-active': mobileMenuOpen }"
-      >
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-      </button>
+          <AppButton 
+            v-else 
+            variant="primary" 
+            size="sm" 
+            @click="emit('loginClick')"
+          >
+            {{ t.loginRegister || 'Login' }}
+          </AppButton>
+        </div>
+
+        <!-- Hamburger Icon Button (Mobile) -->
+        <button 
+          class="md:tw-hidden tw-w-10 tw-h-10 tw-flex tw-items-center tw-justify-center tw-rounded-xl tw-bg-muted/80 hover:tw-bg-muted tw-border-none tw-cursor-pointer tw-text-foreground"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+          :aria-expanded="mobileMenuOpen"
+        >
+          <svg v-if="!mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" class="tw-h-6 tw-w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="tw-h-6 tw-w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+      </div>
     </div>
 
-    <!-- Mobile Slide-down Drawer -->
-    <Transition name="slide-drawer">
-      <div v-if="mobileMenuOpen" class="mobile-drawer">
-        <nav class="mobile-nav">
-          <div :class="['mobile-nav-link', { active: activeTab === 'explorer' }]" @click="navigateTo('explorer')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span>{{ t.explorer }}</span>
-          </div>
-          <div :class="['mobile-nav-link', { active: activeTab === 'eligibility' }]" @click="navigateTo('eligibility')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-            <span>{{ t.eligibility }}</span>
-          </div>
-          <div :class="['mobile-nav-link', { active: activeTab === 'saved' }]" @click="navigateTo('saved')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            <span>{{ t.saved }}</span>
-            <span v-if="savedCount > 0" class="badge" style="margin-left:auto;">{{ savedCount }}</span>
-          </div>
-          <div :class="['mobile-nav-link', { active: activeTab === 'jobs' }]" @click="navigateTo('jobs')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-            <span>{{ t.govtJobsNav || 'Govt Jobs' }}</span>
-          </div>
-          <div v-if="user" :class="['mobile-nav-link', { active: activeTab === 'applications' }]" @click="navigateTo('applications')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            <span>{{ t.myApplications || 'Applications' }}</span>
-          </div>
-          <div v-if="user" :class="['mobile-nav-link', { active: activeTab === 'profile' }]" @click="navigateTo('profile')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>{{ t.myProfile || 'Profile' }}</span>
-          </div>
-          <div v-if="user && authStore.isAdmin" :class="['mobile-nav-link', { active: activeTab === 'admin' }]" @click="navigateTo('admin')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-            <span>Admin Panel</span>
+    <!-- Mobile Navigation Drawer -->
+    <div v-if="mobileMenuOpen" class="md:tw-hidden tw-bg-card/98 tw-backdrop-blur-md tw-shadow-2xl tw-border-t tw-border-border tw-absolute tw-w-full">
+      <nav class="tw-flex tw-flex-col tw-gap-1 tw-p-4">
+        <button
+          v-for="nav in [
+            { id: 'explorer', label: t.explorer || 'Explorer' },
+            { id: 'eligibility', label: t.eligibility || 'Eligibility' },
+            { id: 'jobs', label: t.govtJobsNav || 'Jobs' },
+            { id: 'companies', label: 'Companies' },
+            { id: 'internships', label: 'Internships' },
+            { id: 'ai-assistant', label: t.aiAssistant || 'AI' },
+            { id: 'career-resources', label: t.careerResources || 'Resources' }
+          ]"
+          :key="nav.id"
+          @click="navigateTo(nav.id)"
+          class="tw-w-full tw-text-left tw-px-4 tw-py-2.5 tw-rounded-xl tw-text-sm tw-font-heading tw-font-bold tw-border-none tw-cursor-pointer"
+          :class="activeTab === nav.id ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+        >
+          {{ nav.label }}
+        </button>
+
+        <button
+          @click="navigateTo('saved')"
+          class="tw-w-full tw-text-left tw-px-4 tw-py-2.5 tw-rounded-xl tw-text-sm tw-font-heading tw-font-bold tw-border-none tw-cursor-pointer tw-flex tw-items-center tw-justify-between"
+          :class="activeTab === 'saved' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+        >
+          <span>{{ t.saved || 'Saved' }}</span>
+          <span 
+            class="tw-text-[10px] tw-px-2 tw-py-0.5 tw-rounded-full"
+            :class="activeTab === 'saved' ? 'tw-bg-black tw-text-primary' : 'tw-bg-primary tw-text-white'"
+          >
+            {{ savedCount }}
+          </span>
+        </button>
+
+        <button
+          v-if="user"
+          @click="navigateTo('applications')"
+          class="tw-w-full tw-text-left tw-px-4 tw-py-2.5 tw-rounded-xl tw-text-sm tw-font-heading tw-font-bold tw-border-none tw-cursor-pointer"
+          :class="activeTab === 'applications' ? 'tw-bg-primary tw-text-black tw-shadow-[0_0_12px_rgba(249,115,22,0.5)]' : 'tw-text-muted-foreground hover:tw-text-foreground tw-bg-transparent'"
+        >
+          {{ t.myApplications || 'Applications' }}
+        </button>
+
+        <!-- Divider -->
+        <div class="tw-h-[1px] tw-bg-border/50 tw-my-2"></div>
+
+        <!-- Toggles & Selects Row -->
+        <div class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-2">
+          <div class="tw-flex tw-items-center tw-gap-3">
+            <RuralModeToggle />
+            <ThemeToggle />
+            <LanguageSwitcher />
           </div>
 
-          <!-- Mobile Settings Section -->
-          <div class="mobile-settings-divider"></div>
-          <div class="mobile-settings-row">
-            <select 
-              class="form-control select-lang" 
-              :value="currentLanguage"
-              @change="emit('update:currentLanguage', $event.target.value)"
-              style="flex: 1;"
+          <div v-if="user" class="tw-flex tw-items-center tw-gap-2">
+            <span class="tw-text-xs tw-font-bold tw-text-foreground" @click="navigateTo('profile')">
+              {{ user.full_name.split(' ')[0] }}
+            </span>
+            <button 
+              class="tw-w-8 tw-h-8 tw-rounded-full tw-bg-primary tw-text-white tw-flex tw-items-center tw-justify-center tw-border-none tw-cursor-pointer"
+              @click="navigateTo('profile')"
             >
-              <option value="en">English</option>
-              <option value="hi">हिंदी (Hindi)</option>
-              <option value="mr">मराठी (Marathi)</option>
-            </select>
-            <button class="btn-icon" @click="emit('update:theme', theme === 'dark' ? 'light' : 'dark')">
-              <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.77" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              👤
             </button>
-            <button :class="['btn-icon', { active: ruralMode }]" @click="emit('update:ruralMode', !ruralMode)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <button 
+              class="tw-w-8 tw-h-8 tw-rounded-full tw-bg-muted tw-text-muted-foreground hover:tw-text-destructive tw-flex tw-items-center tw-justify-center tw-border-none tw-cursor-pointer"
+              @click="handleLogout"
+            >
+              ✕
             </button>
           </div>
-          <!-- Mobile login/logout -->
-          <div v-if="user" class="mobile-nav-link" @click="handleLogout">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            <span>{{ t.logout || 'Logout' }} ({{ user.full_name.split(' ')[0] }})</span>
-          </div>
-          <div v-else class="mobile-nav-link" @click="emit('loginClick'); mobileMenuOpen = false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-            <span>{{ t.loginRegister || 'Login / Register' }}</span>
-          </div>
-        </nav>
-      </div>
-    </Transition>
+
+          <AppButton 
+            v-else 
+            variant="primary" 
+            size="sm" 
+            @click="emit('loginClick')"
+          >
+            {{ t.loginRegister || 'Login' }}
+          </AppButton>
+        </div>
+      </nav>
+    </div>
+
   </header>
 </template>
 
 <style scoped>
-/* Unified nav + settings row */
-.nav-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex: 1 1 auto;
-  min-width: 0;
-  background: var(--clr-surface-alt);
-  border-radius: var(--border-radius-full);
-  border: 1px solid var(--clr-border);
-  padding: 3px;
-}
-
-.nav-menu {
-  display: flex;
-  gap: 2px;
-  flex-wrap: nowrap;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.nav-divider {
-  width: 1px;
-  height: 24px;
-  background: var(--clr-border);
-  margin: 0 6px;
-  flex-shrink: 0;
-}
-
-.nav-settings {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding-right: 2px;
-}
-
-/* Icon button (theme, rural) */
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: var(--clr-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.btn-icon:hover {
-  color: var(--clr-primary);
-  background: var(--clr-primary-light);
-}
-
-.btn-icon.active {
-  color: var(--clr-secondary);
-  background: var(--clr-secondary-light);
-}
-
-/* Compact language selector */
-.nav-settings .select-lang {
-  padding: 5px 26px 5px 8px !important;
-  font-size: 0.78rem;
-  font-weight: 700;
-  border-radius: var(--border-radius-full) !important;
-  max-width: 60px;
-  height: 32px;
-  background-color: transparent !important;
-  border-color: transparent !important;
-}
-
-.nav-settings .select-lang:focus {
-  border-color: var(--clr-primary) !important;
-  background-color: var(--clr-surface) !important;
-}
-
-/* Compact user badge inside nav row */
-.nav-settings .user-profile-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 4px 2px 8px;
-  background: var(--clr-primary-light);
-  border: none;
-  border-radius: var(--border-radius-full);
-}
-
-.nav-settings .user-avatar {
-  width: 24px;
-  height: 24px;
-}
-
-.nav-settings .user-name-text {
-  font-size: 0.78rem;
-  max-width: 70px;
-}
-
-.nav-settings .btn-logout {
-  width: 24px;
-  height: 24px;
-}
-
-/* Compact login button */
-.nav-settings .btn-login {
-  padding: 5px 12px;
-  font-size: 0.78rem;
-  gap: 5px;
-}
-
-/* Hamburger button — hidden on desktop */
-.btn-hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  width: 38px;
-  height: 38px;
-  padding: 8px;
-  background: var(--clr-surface-alt);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-hamburger:hover {
-  border-color: var(--clr-primary);
-}
-
-.hamburger-line {
-  display: block;
-  width: 18px;
-  height: 2px;
-  background-color: var(--clr-text-main);
-  border-radius: 1px;
-  transition: all 0.3s ease;
-}
-
-.btn-hamburger.is-active .hamburger-line:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
-}
-.btn-hamburger.is-active .hamburger-line:nth-child(2) {
-  opacity: 0;
-}
-.btn-hamburger.is-active .hamburger-line:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
-}
-
-/* Mobile Drawer */
-.mobile-drawer {
-  display: none;
-}
-
-.mobile-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 16px 16px;
-}
-
-.mobile-nav-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--clr-text-muted);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mobile-nav-link:hover {
-  background: var(--clr-surface-alt);
-  color: var(--clr-text-main);
-}
-
-.mobile-nav-link.active {
-  background: linear-gradient(135deg, var(--clr-primary) 0%, hsl(265, 100%, 60%) 100%);
-  color: var(--clr-text-light);
-  box-shadow: 0 4px 12px var(--clr-primary-glow);
-}
-
-.mobile-settings-divider {
-  height: 1px;
-  background: var(--clr-border);
-  margin: 8px 0;
-}
-
-.mobile-settings-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 16px;
-}
-
-.mobile-settings-row .select-lang {
-  padding: 8px 32px 8px 12px !important;
-  font-size: 0.85rem;
-  border-radius: var(--border-radius-full) !important;
-}
-
-.mobile-settings-row .btn-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--clr-surface-alt);
-  border: 1px solid var(--clr-border);
-  border-radius: 50%;
-}
-
-/* Slide drawer animation */
-.slide-drawer-enter-active,
-.slide-drawer-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 600px;
-  overflow: hidden;
-}
-.slide-drawer-enter-from,
-.slide-drawer-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-
-/* --- Mobile: show hamburger, hide unified nav row --- */
-@media (max-width: 768px) {
-  .nav-desktop {
-    display: none !important;
-  }
-
-  .btn-hamburger {
-    display: flex;
-  }
-
-  .mobile-drawer {
-    display: block;
-    background: var(--clr-surface);
-    border-top: 1px solid var(--clr-border);
-  }
-}
-
-/* Tablet: allow nav row to scroll if needed */
-@media (max-width: 1100px) and (min-width: 769px) {
-  .nav-menu {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .nav-menu::-webkit-scrollbar {
-    display: none;
-  }
-  .nav-link span {
-    font-size: 0.78rem;
-  }
-}
-
-/* Very small screens — compact user badge */
-@media (max-width: 420px) {
-  .user-name-text {
-    display: none;
-  }
-
-  .user-profile-badge {
-    gap: 4px;
-    padding: 4px;
-  }
+/* Glassmorphism overrides */
+.glass {
+  border-bottom: 1px solid hsl(var(--border) / 0.8);
 }
 </style>

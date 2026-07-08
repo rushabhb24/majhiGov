@@ -24,6 +24,27 @@ const routes = [
     component: () => import('../views/JobsView.vue')
   },
   {
+    path: '/ai-assistant',
+    name: 'ai-assistant',
+    component: () => import('../views/AIAssistantView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/career-resources',
+    name: 'career-resources',
+    component: () => import('../views/CareerResourcesView.vue')
+  },
+  {
+    path: '/companies',
+    name: 'companies',
+    component: () => import('../views/CompaniesView.vue')
+  },
+  {
+    path: '/internships',
+    name: 'internships',
+    component: () => import('../views/JobsView.vue')
+  },
+  {
     path: '/applications',
     name: 'applications',
     component: () => import('../views/ApplicationsView.vue'),

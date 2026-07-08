@@ -10,11 +10,12 @@ import { useBookmarkStore } from './stores/bookmarks'
 import { useApplicationStore } from './stores/applications'
 import { useUiStore } from './stores/ui'
 
-// Import Shared Components
 import Header from './components/Header.vue'
 import Hero from './components/Hero.vue'
+import Footer from './components/Footer.vue'
 import SchemeDetailsModal from './components/SchemeDetailsModal.vue'
 import ToastBanner from './components/ToastBanner.vue'
+import AuthModal from './components/AuthModal.vue'
 
 // Initialize stores
 const authStore = useAuthStore()
@@ -33,6 +34,15 @@ watch(() => uiStore.currentLanguage, (newLang) => {
   locale.value = newLang
 }, { immediate: true })
 
+// Watch theme to set dark class on <html>
+watch(() => uiStore.theme, (newTheme) => {
+  if (newTheme === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}, { immediate: true })
+
 // Handle tab/route navigation
 function handleTabChange(tabName) {
   const routeMap = {
@@ -40,6 +50,8 @@ function handleTabChange(tabName) {
     eligibility: '/eligibility',
     saved: '/saved',
     jobs: '/jobs',
+    'ai-assistant': '/ai-assistant',
+    'career-resources': '/career-resources',
     applications: '/applications',
     profile: '/profile',
     admin: '/admin/dashboard'
@@ -75,7 +87,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="['app-wrapper', { 'rural-mode': uiStore.ruralMode }, uiStore.theme]">
+  <div :class="['app-wrapper', uiStore.theme, { 'rural-mode': uiStore.ruralMode }]">
     <!-- Header component (Logo, selects, tabs, togglers) -->
     <Header
       v-if="!$route.path.startsWith('/admin')"
@@ -98,11 +110,14 @@ onMounted(() => {
     <main class="main-container">
       
       <!-- Premium Hero Headline banner -->
-      <Hero v-if="!$route.path.startsWith('/admin')" :t="tObj" @start-check="handleTabChange('eligibility')" />
+      <Hero v-if="$route.path === '/'" :t="tObj" @start-check="handleTabChange('eligibility')" />
 
       <!-- Router View - renders current route's component -->
       <router-view />
     </main>
+
+    <!-- Site Footer -->
+    <Footer v-if="!$route.path.startsWith('/admin')" />
 
     <!-- Details relational modal overlay (Acc FAQ + Docs lists) -->
     <SchemeDetailsModal
@@ -127,311 +142,74 @@ onMounted(() => {
     />
 
     <!-- Beautiful Glassmorphic Application Form Modal -->
-    <Transition name="modal-fade">
-      <div v-if="applicationStore.applyModalOpen && applicationStore.applyingScheme" class="modal-overlay" @click.self="applicationStore.closeApplyModal()">
-        <div class="modal-content card" style="max-width: 600px; width: 100%;">
-          <button class="btn-close-modal" @click="applicationStore.closeApplyModal()" title="Close Modal">×</button>
-          
-          <h2 class="modal-title">{{ t('applyFormTitle') || 'Submit Government Application Form' }}</h2>
-          <h4 class="mt-2 text-muted" style="font-family: var(--font-heading); font-weight: 600; color: var(--clr-primary);">
-            {{ uiStore.currentLanguage === 'mr' ? (applicationStore.applyingScheme.title_mr || applicationStore.applyingScheme.title) : (uiStore.currentLanguage === 'hi' ? (applicationStore.applyingScheme.title_hi || applicationStore.applyingScheme.title) : applicationStore.applyingScheme.title) }}
-          </h4>
-          
-          <hr class="divider mt-4" />
-          
-          <div class="modal-scroll-area">
-            <p class="text-muted mt-2" style="font-size: 0.9rem; line-height: 1.5;">
-              {{ t('requiredDocumentsInfo') || 'Review required documents before submitting your request. Make sure you possess all mandatory credentials.' }}
-            </p>
-            
-            <!-- Mandatory Documents checklist for verification -->
-            <div class="docs-checklist mt-4" style="background: var(--clr-surface-alt); padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--clr-border);">
-              <h5 style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">📋 {{ t('modalDocs') || 'Required Documents' }}</h5>
-              <div v-for="doc in applicationStore.applyingScheme.documents" :key="doc.id" style="display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; font-size: 0.88rem;">
-                <span>🟢</span>
-                <div>
-                  <strong style="color: var(--clr-text-main);">{{ uiStore.currentLanguage === 'mr' ? doc.document_name_mr : (uiStore.currentLanguage === 'hi' ? doc.document_name_hi : doc.document_name) }}</strong>
-                  <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;" :style="doc.is_mandatory ? 'background: rgba(239, 68, 68, 0.15); color: var(--clr-danger);' : 'background: rgba(16, 185, 129, 0.15); color: var(--clr-success);'">
-                    {{ doc.is_mandatory ? t('mandatoryBadge') || 'Mandatory' : t('optionalBadge') || 'Optional' }}
-                  </span>
-                </div>
-              </div>
+    <AppDialog
+      :open="applicationStore.applyModalOpen && !!applicationStore.applyingScheme"
+      @close="applicationStore.closeApplyModal()"
+      maxWidth="600px"
+    >
+      <div v-if="applicationStore.applyingScheme" class="tw-flex tw-flex-col tw-gap-4">
+        <h2 class="tw-font-heading tw-font-bold tw-text-xl tw-text-foreground tw-m-0">
+          {{ t('applyFormTitle') || 'Submit Government Application Form' }}
+        </h2>
+        <h4 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0">
+          {{ uiStore.currentLanguage === 'mr' ? (applicationStore.applyingScheme.title_mr || applicationStore.applyingScheme.title) : (uiStore.currentLanguage === 'hi' ? (applicationStore.applyingScheme.title_hi || applicationStore.applyingScheme.title) : applicationStore.applyingScheme.title) }}
+        </h4>
+
+        <hr class="tw-border-border/50 tw-my-1" />
+
+        <p class="tw-text-xs tw-text-muted-foreground tw-line-height-[1.5] tw-m-0">
+          {{ t('requiredDocumentsInfo') || 'Review required documents before submitting your request. Make sure you possess all mandatory credentials.' }}
+        </p>
+
+        <!-- Mandatory Documents checklist -->
+        <div class="tw-p-4 tw-rounded-xl tw-bg-muted/50 tw-border tw-border-border">
+          <h5 class="tw-font-heading tw-font-bold tw-text-xs tw-text-foreground tw-mb-2 tw-mt-0">
+            📋 {{ t('modalDocs') || 'Required Documents' }}
+          </h5>
+          <div 
+            v-for="doc in applicationStore.applyingScheme.documents" 
+            :key="doc.id" 
+            class="tw-flex tw-items-start tw-gap-2 tw-mt-2 tw-text-xs tw-text-muted-foreground"
+          >
+            <span class="tw-text-primary">🟢</span>
+            <div>
+              <strong class="tw-text-foreground">{{ uiStore.currentLanguage === 'mr' ? doc.document_name_mr : (uiStore.currentLanguage === 'hi' ? doc.document_name_hi : doc.document_name) }}</strong>
+              <span class="tw-text-[10px] tw-px-1.5 tw-py-0.5 tw-rounded-full tw-ml-2" :class="doc.is_mandatory ? 'tw-bg-destructive/15 tw-text-destructive' : 'tw-bg-success/15 tw-text-success'">
+                {{ doc.is_mandatory ? t('mandatoryBadge') || 'Mandatory' : t('optionalBadge') || 'Optional' }}
+              </span>
             </div>
-            
-            <!-- Notes Input Form -->
-            <div class="form-group mt-4">
-              <label class="form-label" for="apply-notes-input" style="font-weight: 600;">{{ t('notesLabel') || 'Demographic Notes & Supporting Statement' }}</label>
-              <textarea 
-                id="apply-notes-input" 
-                v-model="applicationStore.applyNotes" 
-                class="form-control" 
-                rows="4" 
-                :placeholder="t('notesPlaceholder') || 'Enter any additional notes or details to support your application...'" 
-                style="resize: vertical; font-family: var(--font-body); padding: 12px; margin-top: 6px;"
-              ></textarea>
-            </div>
-          </div>
-          
-          <div class="modal-footer mt-4">
-            <button class="btn btn-secondary" @click="applicationStore.closeApplyModal()">
-              {{ t('back') || 'Back' }}
-            </button>
-            <button 
-              class="btn btn-primary" 
-              @click="applicationStore.submitApplication()"
-              :disabled="applicationStore.applySubmitting"
-            >
-              {{ applicationStore.applySubmitting ? (t('submittingApp') || 'Submitting...') : (t('submitAppBtn') || 'Submit Application') }}
-            </button>
           </div>
         </div>
-      </div>
-    </Transition>
 
-    <!-- Beautiful Glassmorphic Auth Modal -->
-    <Transition name="modal-fade">
-      <div v-if="authStore.authModalOpen" class="modal-overlay" @click.self="authStore.closeAuthModal()">
-        <div class="modal-content card" style="max-width: 580px; width: 100%;">
-          <button class="btn-close-modal" @click="authStore.closeAuthModal()" title="Close Modal">×</button>
-          
-          <!-- Auth Tabs -->
-          <div class="auth-tabs">
-            <button 
-              :class="['auth-tab-btn', { active: authStore.authTab === 'login' }]"
-              @click="authStore.authTab = 'login'"
-            >
-              {{ t('loginRegister').split(' / ')[0] }}
-            </button>
-            <button 
-              :class="['auth-tab-btn', { active: authStore.authTab === 'register' }]"
-              @click="authStore.authTab = 'register'"
-            >
-              {{ t('loginRegister').split(' / ')[1] }}
-            </button>
-          </div>
+        <!-- Notes Input -->
+        <div>
+          <AppLabel for="apply-notes-input">{{ t('notesLabel') || 'Demographic Notes & Supporting Statement' }}</AppLabel>
+          <AppTextarea
+            id="apply-notes-input"
+            v-model="applicationStore.applyNotes"
+            rows="4"
+            :placeholder="t('notesPlaceholder') || 'Enter any additional notes or details...'"
+          />
+        </div>
 
-          <!-- Login form -->
-          <form v-if="authStore.authTab === 'login'" @submit.prevent="authStore.loginUser()" class="auth-form mt-4">
-            <div class="form-group">
-              <label class="form-label">{{ t('emailLabel') }} *</label>
-              <input 
-                v-model="authStore.loginForm.email" 
-                type="email" 
-                class="form-control" 
-                placeholder="citizen@gov.in" 
-                required 
-              />
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">{{ t('passwordLabel') }} *</label>
-              <input 
-                v-model="authStore.loginForm.password" 
-                type="password" 
-                class="form-control" 
-                placeholder="••••••••" 
-                required 
-              />
-            </div>
-
-            <button 
-              type="submit" 
-              class="btn btn-primary mt-4" 
-              :disabled="authStore.authSubmitting"
-            >
-              {{ authStore.authSubmitting ? t('submitting') : t('loginRegister').split(' / ')[0] }}
-            </button>
-          </form>
-
-          <!-- Register form -->
-          <form v-else @submit.prevent="authStore.registerUser()" class="auth-form mt-4">
-            <div class="auth-scroll-area">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">{{ t('fullNameLabel') }} *</label>
-                  <input 
-                    v-model="authStore.regForm.full_name" 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Ram Prasad" 
-                    required 
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">{{ t('dobLabel') }} *</label>
-                  <input 
-                    v-model="authStore.regForm.date_of_birth" 
-                    type="date" 
-                    class="form-control" 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">{{ t('emailLabel') }} *</label>
-                  <input 
-                    v-model="authStore.regForm.email" 
-                    type="email" 
-                    class="form-control" 
-                    placeholder="ram@gov.in" 
-                    required 
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">{{ t('phoneLabel') }} *</label>
-                  <input 
-                    v-model="authStore.regForm.phone" 
-                    type="tel" 
-                    class="form-control" 
-                    placeholder="9876543210" 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">{{ t('passwordLabel') }} *</label>
-                <input 
-                  v-model="authStore.regForm.password" 
-                  type="password" 
-                  class="form-control" 
-                  placeholder="Create secure password" 
-                  required 
-                  />
-              </div>
-
-              <!-- Aadhaar Number Input -->
-              <div class="form-group">
-                <label class="form-label">{{ t('aadhaarLabel') }} *</label>
-                <input 
-                  v-model="authStore.regForm.aadhaar" 
-                  type="text" 
-                  class="form-control" 
-                  placeholder="e.g. 555566667777" 
-                  pattern="[0-9]{12}"
-                  title="Aadhaar number must be exactly 12 digits"
-                  required 
-                />
-              </div>
-
-              <hr class="divider mt-2" />
-              <h4 class="form-section-title mt-2" style="font-size: 0.9rem; color: var(--clr-primary);">{{ t('demographicDetails') }}</h4>
-
-              <div class="form-row mt-2">
-                <div class="form-group">
-                  <label class="form-label">{{ t('genderLabel') }} *</label>
-                  <select v-model="authStore.regForm.gender" class="form-control" required>
-                    <option value="Male">{{ t('maleOpt') }}</option>
-                    <option value="Female">{{ t('femaleOpt') }}</option>
-                    <option value="Other">{{ t('otherOpt') }}</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">{{ t('casteLabel') }} *</label>
-                  <select v-model="authStore.regForm.caste_category" class="form-control" required>
-                    <option value="General">General / Open</option>
-                    <option value="OBC">OBC</option>
-                    <option value="SC">SC</option>
-                    <option value="ST">ST</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">{{ t('stateLabel') }} *</label>
-                  <select v-model="authStore.regForm.state" class="form-control" required>
-                    <option value="Maharashtra">Maharashtra</option>
-                    <option value="Gujarat">Gujarat</option>
-                    <option value="Madhya Pradesh">Madhya Pradesh</option>
-                    <option value="Karnataka">Karnataka</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="All">All India</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">{{ t('districtLabel') }} *</label>
-                  <input 
-                    v-model="authStore.regForm.district" 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Pune" 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">{{ t('incomeLabel') }} *</label>
-                  <input 
-                    v-model="authStore.regForm.annual_income" 
-                    type="number" 
-                    class="form-control" 
-                    required 
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">{{ t('occupationLabel') }} *</label>
-                  <select v-model="authStore.regForm.occupation" class="form-control" required>
-                    <option value="Farmer">Farmer</option>
-                    <option value="Student">Student</option>
-                    <option value="Business Owner">Business Owner</option>
-                    <option value="Unemployed">Unemployed</option>
-                    <option value="Retired">Retired / Senior Citizen</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">{{ t('employeeTypeLabel') }} *</label>
-                  <select v-model="authStore.regForm.employee_type" class="form-control" required>
-                    <option value="Unemployed">Unemployed</option>
-                    <option value="Private Employee">Private Sector</option>
-                    <option value="Government Employee">Government Sector</option>
-                    <option value="Self Employed">Self Employed</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">{{ t('educationLabel') }} *</label>
-                  <select v-model="authStore.regForm.education_level" class="form-control" required>
-                    <option value="10th Pass">10th Standard or lower</option>
-                    <option value="12th Pass">12th Standard</option>
-                    <option value="Undergraduate">Undergraduate Degree</option>
-                    <option value="Graduate">Graduate / Master Degree</option>
-                    <option value="Post Graduate">Doctorate / Specialist</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">{{ t('disabilityLabel') }}</label>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <input 
-                    type="checkbox" 
-                    id="regIsDisabled" 
-                    v-model="authStore.regForm.is_disabled" 
-                    style="width: 20px; height: 20px; cursor: pointer;"
-                  />
-                  <label for="regIsDisabled" style="cursor: pointer; font-size: 0.9rem;">Yes, I am differently-abled / Haan, mai divyang hu</label>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              class="btn btn-primary mt-4" 
-              :disabled="authStore.authSubmitting"
-            >
-              {{ authStore.authSubmitting ? t('submitting') : t('loginRegister').split(' / ')[1] }}
-            </button>
-          </form>
+        <div class="tw-flex tw-justify-end tw-gap-3 tw-mt-2">
+          <AppButton variant="outline" size="sm" @click="applicationStore.closeApplyModal()">
+            {{ t('back') || 'Back' }}
+          </AppButton>
+          <AppButton
+            variant="primary"
+            size="sm"
+            @click="applicationStore.submitApplication()"
+            :disabled="applicationStore.applySubmitting"
+          >
+            {{ applicationStore.applySubmitting ? (t('submittingApp') || 'Submitting...') : (t('submitAppBtn') || 'Submit Application') }}
+          </AppButton>
         </div>
       </div>
-    </Transition>
+    </AppDialog>
+
+    <!-- Teleported Auth Modal component -->
+    <AuthModal />
   </div>
 </template>
 

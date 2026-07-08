@@ -8,6 +8,7 @@ import { useUiStore } from '../stores/ui'
 import SchemeCard from '../components/SchemeCard.vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import AppButton from '../components/ui/AppButton.vue'
 
 const bookmarkStore = useBookmarkStore()
 const authStore = useAuthStore()
@@ -30,19 +31,31 @@ function handleApplyAction(scheme) {
 </script>
 
 <template>
-  <div class="tab-content animate-fade">
-    <div class="card filter-panel">
-      <h2 class="section-title">{{ tObj.savedTitle }}</h2>
-      <p class="text-muted">{{ tObj.savedSubtitle }}</p>
+  <div class="tw-max-w-7xl tw-mx-auto tw-px-4 tw-sm:px-6 tw-lg:px-8 tw-py-8">
+    
+    <!-- Header panel -->
+    <div class="glass tw-p-6 tw-rounded-2xl tw-mb-6">
+      <h2 class="tw-font-heading tw-font-bold tw-text-xl tw-text-foreground tw-m-0">
+        {{ tObj.savedTitle || 'Saved Schemes' }}
+      </h2>
+      <p class="tw-text-xs tw-text-muted-foreground tw-mt-1 tw-m-0">
+        {{ tObj.savedSubtitle || 'View and manage schemes you have bookmarked for quick access.' }}
+      </p>
     </div>
 
-    <div v-if="bookmarkStore.bookmarkedSchemes.length === 0" class="empty-state text-center mt-4 card">
-      <div class="empty-bookmarks-art">🔖</div>
-      <h3>{{ tObj.noSaved }}</h3>
-      <button class="btn btn-primary mt-4" @click="router.push('/')">{{ tObj.exploreSchemes || 'Explore Schemes' }}</button>
+    <!-- Empty State -->
+    <div v-if="bookmarkStore.bookmarkedSchemes.length === 0" class="glass tw-p-12 tw-rounded-2xl tw-text-center tw-flex tw-flex-col tw-items-center tw-gap-4">
+      <div class="tw-text-5xl">🔖</div>
+      <h3 class="tw-font-heading tw-font-bold tw-text-base tw-text-foreground tw-m-0">
+        {{ tObj.noSaved || 'No Saved Schemes' }}
+      </h3>
+      <AppButton variant="primary" size="sm" @click="router.push('/')">
+        {{ tObj.exploreSchemes || 'Explore Schemes' }}
+      </AppButton>
     </div>
 
-    <div v-else class="schemes-grid mt-4">
+    <!-- Schemes Grid List -->
+    <div v-else class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-6">
       <SchemeCard
         v-for="scheme in bookmarkStore.bookmarkedSchemes"
         :key="scheme.id"
@@ -57,20 +70,6 @@ function handleApplyAction(scheme) {
         @apply-click="handleApplyAction"
       />
     </div>
+
   </div>
 </template>
-
-<style scoped>
-.animate-fade {
-  animation: fadeIn 0.4s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.empty-bookmarks-art {
-  font-size: 3.5rem;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.05));
-}
-</style>

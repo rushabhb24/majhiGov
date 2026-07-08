@@ -4,6 +4,7 @@ export default {
     './index.html',
     './src/**/*.{vue,js,ts,jsx,tsx}'
   ],
+  darkMode: 'class',
   // Disable preflight to preserve existing custom CSS reset/base styles
   corePlugins: {
     preflight: false
@@ -13,24 +14,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--clr-primary)',
-        'primary-hover': 'var(--clr-primary-hover)',
+        primary: 'hsl(var(--primary))',
         secondary: 'var(--clr-secondary)',
-        'secondary-hover': 'var(--clr-secondary-hover)',
-        accent: 'var(--clr-accent)',
-        'accent-hover': 'var(--clr-accent-hover)',
-        danger: 'var(--clr-danger)',
-        success: 'var(--clr-success)',
-        surface: 'var(--clr-surface)',
-        'surface-alt': 'var(--clr-surface-alt)',
-        'text-main': 'var(--clr-text-main)',
-        'text-muted': 'var(--clr-text-muted)',
-        border: 'var(--clr-border)',
-        bg: 'var(--clr-bg)'
+        accent: 'hsl(var(--accent))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: 'hsl(var(--card))',
+        'card-foreground': 'hsl(var(--card-foreground))',
+        muted: 'hsl(var(--muted))',
+        'muted-foreground': 'hsl(var(--muted-foreground))',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        destructive: 'hsl(var(--destructive))',
+        saffron: 'hsl(var(--saffron))',
+        'india-green': 'hsl(var(--india-green))',
+        navy: 'hsl(var(--navy))',
+        'chakra-blue': 'hsl(var(--chakra-blue))',
+        
+        // Legacy clr- prefixes as fallbacks
+        'clr-primary': 'var(--clr-primary)',
+        'clr-primary-hover': 'var(--clr-primary-hover)',
+        'clr-secondary': 'var(--clr-secondary)',
+        'clr-secondary-hover': 'var(--clr-secondary-hover)',
+        'clr-accent': 'var(--clr-accent)',
+        'clr-accent-hover': 'var(--clr-accent-hover)',
+        'clr-danger': 'var(--clr-danger)',
+        'clr-success': 'var(--clr-success)',
+        'clr-surface': 'var(--clr-surface)',
+        'clr-surface-alt': 'var(--clr-surface-alt)',
+        'clr-text-main': 'var(--clr-text-main)',
+        'clr-text-muted': 'var(--clr-text-muted)',
+        'clr-border': 'var(--clr-border)',
+        'clr-bg': 'var(--clr-bg)'
       },
       fontFamily: {
         heading: 'var(--font-heading)',
-        body: 'var(--font-body)'
+        body: 'var(--font-body)',
+        display: ['Sora', 'sans-serif'],
+        sans: ['Inter', 'sans-serif']
       },
       borderRadius: {
         sm: 'var(--border-radius-sm)',

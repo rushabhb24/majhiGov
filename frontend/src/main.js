@@ -3,6 +3,8 @@ import { createPinia } from 'pinia'
 import i18n from './i18n'
 import router from './router'
 import App from './App.vue'
+import './assets/styles/tokens.css'
+import './assets/styles/app.css'
 import './tailwind.css'
 import './style.css'
 

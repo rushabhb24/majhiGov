@@ -1,9 +1,9 @@
 export default {
   // Header / Navigation
-  explorer: 'योजना शोधा',
-  eligibility: 'पात्रता तपासा',
-  saved: 'जतन केलेल्या योजना',
-  govtJobsNav: 'सरकारी नोकऱ्या',
+  explorer: 'Scheme Explorer',
+  eligibility: 'Smart Eligibility',
+  saved: 'Saved',
+  govtJobsNav: 'Jobs & Careers',
   ruralMode: 'ग्रामीण (सुलभ) मोड',
   normalMode: 'सामान्य मोड',
   languageLabel: 'भाषा',

@@ -2,8 +2,10 @@ export default {
   // Header / Navigation
   explorer: 'Scheme Explorer',
   eligibility: 'Smart Eligibility',
-  saved: 'Saved Schemes',
-  govtJobsNav: 'Govt Jobs',
+  saved: 'Saved',
+  govtJobsNav: 'Jobs & Careers',
+  aiAssistant: 'AI Assistant',
+  careerResources: 'Resources',
   ruralMode: 'Rural (Accessible) Mode',
   normalMode: 'Normal Mode',
   languageLabel: 'Language',

@@ -106,6 +106,12 @@ func InitDB() error {
 		log.Printf("Warning: Failed to seed mock government jobs: %v", err)
 	}
 
+	// Seed Mock Companies and Private Jobs
+	err = seedCompaniesAndPrivateJobs()
+	if err != nil {
+		log.Printf("Warning: Failed to seed mock companies and private jobs: %v", err)
+	}
+
 	return nil
 }
 
@@ -338,6 +344,98 @@ func runMigrations() error {
 
 		// Ensure notifications table has is_active guard for active users
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`,
+
+		// Companies Table
+		`CREATE TABLE IF NOT EXISTS companies (
+			id SERIAL PRIMARY KEY,
+			name VARCHAR(255) NOT NULL,
+			slug VARCHAR(255) UNIQUE,
+			description TEXT,
+			logo_url TEXT,
+			website TEXT,
+			industry VARCHAR(100),
+			company_size VARCHAR(50),
+			location VARCHAR(255),
+			founded_year INT,
+			is_verified BOOLEAN DEFAULT false,
+			is_active BOOLEAN DEFAULT true,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
+
+		// Private Jobs Table
+		`CREATE TABLE IF NOT EXISTS private_jobs (
+			id SERIAL PRIMARY KEY,
+			title VARCHAR(500) NOT NULL,
+			title_hi VARCHAR(500),
+			title_mr VARCHAR(500),
+			company_id INT REFERENCES companies(id) ON DELETE SET NULL,
+			description TEXT,
+			requirements TEXT,
+			responsibilities TEXT,
+			salary_min NUMERIC(12,2),
+			salary_max NUMERIC(12,2),
+			salary_currency VARCHAR(10) DEFAULT 'INR',
+			job_type VARCHAR(50) NOT NULL DEFAULT 'private',
+			work_mode VARCHAR(50) DEFAULT 'onsite',
+			location VARCHAR(255),
+			experience_min INT DEFAULT 0,
+			experience_max INT DEFAULT 5,
+			education_qualification VARCHAR(100),
+			skills TEXT[],
+			employment_type VARCHAR(50) DEFAULT 'full-time',
+			application_start_date DATE,
+			application_end_date DATE,
+			official_website TEXT,
+			apply_link TEXT,
+			stipend VARCHAR(100),
+			prize_pool VARCHAR(100),
+			is_active BOOLEAN DEFAULT true,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
+
+		// User Applied Private Jobs Table
+		`CREATE TABLE IF NOT EXISTS user_applied_private_jobs (
+			id SERIAL PRIMARY KEY,
+			user_id INT REFERENCES users(id) ON DELETE CASCADE,
+			private_job_id INT REFERENCES private_jobs(id) ON DELETE CASCADE,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(user_id, private_job_id)
+		);`,
+
+		// Newsletter Subscribers Table
+		`CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+			id SERIAL PRIMARY KEY,
+			email VARCHAR(254) NOT NULL UNIQUE,
+			name VARCHAR(200),
+			is_active BOOLEAN DEFAULT true,
+			subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			unsubscribed_at TIMESTAMP
+		);`,
+
+		// Resume Uploads Table
+		`CREATE TABLE IF NOT EXISTS resume_uploads (
+			id SERIAL PRIMARY KEY,
+			user_id INT REFERENCES users(id) ON DELETE CASCADE,
+			original_filename VARCHAR(500),
+			file_path TEXT,
+			text_content TEXT,
+			file_size_bytes INT,
+			uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
+
+		// Audit Logs Table
+		`CREATE TABLE IF NOT EXISTS audit_logs (
+			id SERIAL PRIMARY KEY,
+			user_id INT REFERENCES users(id) ON DELETE SET NULL,
+			action VARCHAR(100) NOT NULL,
+			resource_type VARCHAR(100),
+			resource_id INT,
+			details TEXT,
+			ip_address VARCHAR(45),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);`,
 	}
 
 
@@ -355,11 +453,22 @@ func runMigrations() error {
 func seedRelationalData() error {
 	// Seed default Super Admin if not present
 	var adminExists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = 'admin@gov.in')").Scan(&adminExists)
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE is_admin = true)").Scan(&adminExists)
 	if err != nil {
 		return fmt.Errorf("failed to check if admin exists: %v", err)
 	}
 	if !adminExists {
+		var phoneExists bool
+		err = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE phone = '9999999999')").Scan(&phoneExists)
+		if err != nil {
+			return fmt.Errorf("failed to check if phone exists: %v", err)
+		}
+
+		adminPhone := "9999999999"
+		if phoneExists {
+			adminPhone = "8888888888"
+		}
+
 		log.Println("Seeding default Super Admin user...")
 		hash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 		if err != nil {
@@ -368,7 +477,7 @@ func seedRelationalData() error {
 		var adminID int
 		err = DB.QueryRow(`
 			INSERT INTO users (email, phone, password_hash, is_verified, is_admin)
-			VALUES ('admin@gov.in', '9999999999', $1, true, true) RETURNING id`, string(hash)).Scan(&adminID)
+			VALUES ('admin@gov.in', $1, $2, true, true) RETURNING id`, adminPhone, string(hash)).Scan(&adminID)
 		if err != nil {
 			return fmt.Errorf("failed to insert seeded admin user: %v", err)
 		}
@@ -884,5 +993,195 @@ func seedGovtJobs() error {
 	}
 
 	log.Println("Mock government jobs successfully seeded!")
+	return nil
+}
+
+func seedCompaniesAndPrivateJobs() error {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM companies").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		log.Println("Companies table already contains data. Skipping seeding.")
+		return nil
+	}
+
+	log.Println("Seeding mock companies...")
+	companies := []struct {
+		Name        string
+		Slug        string
+		Description string
+		LogoURL     string
+		Website     string
+		Industry    string
+		CompanySize string
+		Location    string
+		FoundedYear int
+		IsVerified  bool
+	}{
+		{"Tata Consultancy Services", "tcs", "Global leader in IT services, consulting & business solutions.", "https://upload.wikimedia.org/wikipedia/commons/b/b1/Tata_Consultancy_Services_Logo.svg", "https://tcs.com", "IT Services", "Enterprise", "Mumbai, Maharashtra", 1968, true},
+		{"Infosys", "infosys", "Next-generation digital services and consulting leader.", "https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg", "https://infosys.com", "IT Services", "Enterprise", "Bengaluru, Karnataka", 1981, true},
+		{"Wipro", "wipro", "Leading global information technology, consulting and business process services company.", "https://upload.wikimedia.org/wikipedia/commons/a/a0/Wipro_Logo.svg", "https://wipro.com", "IT Services", "Enterprise", "Bengaluru, Karnataka", 1945, true},
+		{"Flipkart", "flipkart", "India's leading e-commerce marketplace.", "https://upload.wikimedia.org/wikipedia/commons/7/7a/Flipkart_logo.svg", "https://flipkart.com", "E-commerce", "Enterprise", "Bengaluru, Karnataka", 2007, true},
+		{"Zomato", "zomato", "Connecting people with the best food in their cities.", "https://upload.wikimedia.org/wikipedia/commons/b/bd/Zomato_Logo.svg", "https://zomato.com", "Food Tech", "Large", "Gurugram, Haryana", 2008, true},
+		{"Acme Corp", "acme", "A fast-growing tech startup building next-gen SaaS tools.", "", "https://acme.io", "Software", "Startup", "Pune, Maharashtra", 2022, false},
+	}
+
+	companyIds := make(map[string]int)
+	for _, c := range companies {
+		var id int
+		err = DB.QueryRow(`
+			INSERT INTO companies (name, slug, description, logo_url, website, industry, company_size, location, founded_year, is_verified, is_active)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true) RETURNING id`,
+			c.Name, c.Slug, c.Description, c.LogoURL, c.Website, c.Industry, c.CompanySize, c.Location, c.FoundedYear, c.IsVerified,
+		).Scan(&id)
+		if err != nil {
+			return fmt.Errorf("failed to insert seeded company %s: %v", c.Name, err)
+		}
+		companyIds[c.Slug] = id
+	}
+
+	log.Println("Seeding mock private sector jobs...")
+	jobs := []struct {
+		Title                  string
+		CompanySlug            string
+		Description            string
+		Requirements           string
+		Responsibilities       string
+		SalaryMin              float64
+		SalaryMax              float64
+		JobType                string // private, internship, walkin, hackathon
+		WorkMode               string // remote, hybrid, onsite
+		Location               string
+		ExperienceMin          int
+		ExperienceMax          int
+		EducationQualification string
+		Skills                 []string
+		EmploymentType         string // full-time, part-time, contract, freelance
+		OfficialWebsite        string
+		ApplyLink              string
+		Stipend                string
+		PrizePool              string
+	}{
+		{
+			Title:            "Frontend Developer (React)",
+			CompanySlug:      "acme",
+			Description:      "Join our fast-growing startup to build clean, modern, and accessible user interfaces using React and Vue.",
+			Requirements:     "Proficient in React, JavaScript, HTML5, CSS3. Experience with state management (Pinia/Redux).",
+			Responsibilities: "Develop reusable UI components, collaborate with product designers, and optimize web app performance.",
+			SalaryMin:        600000,
+			SalaryMax:        1200000,
+			JobType:          "private",
+			WorkMode:         "remote",
+			Location:         "Pune, Maharashtra",
+			ExperienceMin:    1,
+			ExperienceMax:    3,
+			EducationQualification: "Graduate",
+			Skills:           []string{"React", "JavaScript", "CSS3", "HTML5", "Pinia"},
+			EmploymentType:   "full-time",
+			OfficialWebsite:  "https://acme.io",
+			ApplyLink:        "https://acme.io/careers/frontend",
+		},
+		{
+			Title:            "Software Engineer Trainee",
+			CompanySlug:      "tcs",
+			Description:      "Entry level position for freshers to start their journey in enterprise software development.",
+			Requirements:     "Basic programming knowledge in Java, C++, or Python. Good problem solving skills.",
+			Responsibilities: "Participate in training programs, support existing application development, and write clean code under guidance.",
+			SalaryMin:        350000,
+			SalaryMax:        450000,
+			JobType:          "private",
+			WorkMode:         "onsite",
+			Location:         "Mumbai, Maharashtra",
+			ExperienceMin:    0,
+			ExperienceMax:    1,
+			EducationQualification: "Graduate",
+			Skills:           []string{"Java", "C++", "Python", "SQL"},
+			EmploymentType:   "full-time",
+			OfficialWebsite:  "https://tcs.com",
+			ApplyLink:        "https://tcs.com/careers/freshers",
+		},
+		{
+			Title:            "Mobile App Development Intern",
+			CompanySlug:      "zomato",
+			Description:      "3-month paid internship working on our core food ordering and delivery Android/iOS application.",
+			Requirements:     "Experience building at least 1 Flutter or React Native mobile application.",
+			Responsibilities: "Implement UI screens, write unit tests for mobile modules, and debug user issues.",
+			SalaryMin:        0,
+			SalaryMax:        0,
+			JobType:          "internship",
+			WorkMode:         "hybrid",
+			Location:         "Gurugram, Haryana",
+			ExperienceMin:    0,
+			ExperienceMax:    1,
+			EducationQualification: "Graduate",
+			Skills:           []string{"Flutter", "React Native", "Dart", "API Integration"},
+			EmploymentType:   "contract",
+			OfficialWebsite:  "https://zomato.com",
+			ApplyLink:        "https://zomato.com/careers/intern-mobile",
+			Stipend:          "₹25,000 per month",
+		},
+		{
+			Title:            "Flipkart Grid Hackathon 2026",
+			CompanySlug:      "flipkart",
+			Description:      "India's biggest technology hackathon focusing on E-commerce supply chain and generative AI solutions.",
+			Requirements:     "Currently enrolled in any engineering undergraduate program. Teams of 2 to 4 members.",
+			Responsibilities: "Build a working prototype, submit an implementation deck, and present to Flipkart leadership.",
+			SalaryMin:        0,
+			SalaryMax:        0,
+			JobType:          "hackathon",
+			WorkMode:         "remote",
+			Location:         "Bengaluru, Karnataka",
+			ExperienceMin:    0,
+			ExperienceMax:    4,
+			EducationQualification: "Undergraduate",
+			Skills:           []string{"Python", "Machine Learning", "System Design", "Generative AI"},
+			EmploymentType:   "freelance",
+			OfficialWebsite:  "https://flipkart.com",
+			ApplyLink:        "https://flipkart.com/grid-hackathon",
+			PrizePool:        "₹10,00,000 + PPI opportunities",
+		},
+		{
+			Title:            "Mega Walk-in Drive for System Engineers",
+			CompanySlug:      "infosys",
+			Description:      "Urgent walk-in hiring drive for experienced systems and cloud engineers in Pune.",
+			Requirements:     "Experience managing AWS/Azure cloud resources. Proficiency in Linux administration.",
+			Responsibilities: "Perform migrations, manage cloud infra, monitor logs, and assist with DevOps pipelines.",
+			SalaryMin:        800000,
+			SalaryMax:        1500000,
+			JobType:          "walkin",
+			WorkMode:         "onsite",
+			Location:         "Pune, Maharashtra",
+			ExperienceMin:    2,
+			ExperienceMax:    5,
+			EducationQualification: "Graduate",
+			Skills:           []string{"AWS", "Linux", "Terraform", "Docker"},
+			EmploymentType:   "full-time",
+			OfficialWebsite:  "https://infosys.com",
+			ApplyLink:        "https://infosys.com/careers/walkin-pune",
+		},
+	}
+
+	for _, j := range jobs {
+		cid := companyIds[j.CompanySlug]
+		_, err = DB.Exec(`
+			INSERT INTO private_jobs (
+				title, company_id, description, requirements, responsibilities,
+				salary_min, salary_max, job_type, work_mode, location,
+				experience_min, experience_max, education_qualification, skills, employment_type,
+				official_website, apply_link, stipend, prize_pool, is_active
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, true)`,
+			j.Title, cid, j.Description, j.Requirements, j.Responsibilities,
+			j.SalaryMin, j.SalaryMax, j.JobType, j.WorkMode, j.Location,
+			j.ExperienceMin, j.ExperienceMax, j.EducationQualification, pq.Array(j.Skills), j.EmploymentType,
+			j.OfficialWebsite, j.ApplyLink, j.Stipend, j.PrizePool,
+		)
+		if err != nil {
+			log.Printf("Failed to seed private job %s: %v", j.Title, err)
+		}
+	}
+
+	log.Println("Mock companies and private sector jobs successfully seeded!")
 	return nil
 }

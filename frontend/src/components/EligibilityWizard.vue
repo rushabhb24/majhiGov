@@ -1,4 +1,10 @@
 <script setup>
+import AppCard from './ui/AppCard.vue'
+import AppInput from './ui/AppInput.vue'
+import AppSelect from './ui/AppSelect.vue'
+import AppButton from './ui/AppButton.vue'
+import AppLabel from './ui/AppLabel.vue'
+
 defineProps({
   profile: {
     type: Object,
@@ -22,190 +28,209 @@ const emit = defineEmits(['update:step', 'submit']);
 </script>
 
 <template>
-  <div class="card wizard-panel">
-    <h2 class="section-title">{{ t.eligibility }}</h2>
+  <AppCard class="tw-max-w-2xl tw-mx-auto tw-p-8">
+    <h2 class="tw-font-heading tw-font-bold tw-text-xl tw-text-foreground tw-mb-6 tw-m-0 text-center">
+      {{ t.eligibility || 'Smart Eligibility Wizard' }}
+    </h2>
     
-    <!-- Step Indicators -->
-    <div class="steps-indicator">
-      <div :class="['step-node', { active: step >= 1 }]">1</div>
-      <div class="step-line"></div>
-      <div :class="['step-node', { active: step >= 2 }]">2</div>
-      <div class="step-line"></div>
-      <div :class="['step-node', { active: step >= 3 }]">3</div>
+    <!-- Step Indicators Stepper -->
+    <div class="tw-flex tw-items-center tw-justify-between tw-mb-8 tw-relative tw-max-w-md tw-mx-auto">
+      
+      <!-- Line behind -->
+      <div class="tw-absolute tw-h-[2px] tw-bg-border tw-w-full tw-top-1/2 -tw-translate-y-1/2 tw-z-0"></div>
+      
+      <!-- Step 1 node -->
+      <div 
+        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-font-heading tw-font-bold tw-text-xs tw-z-10 tw-transition-colors"
+        :class="step >= 1 ? 'tw-bg-primary tw-text-white' : 'tw-bg-muted tw-text-muted-foreground'"
+      >
+        <span v-if="step > 1">✓</span>
+        <span v-else>1</span>
+      </div>
+
+      <!-- Step 2 node -->
+      <div 
+        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-font-heading tw-font-bold tw-text-xs tw-z-10 tw-transition-colors"
+        :class="step >= 2 ? 'tw-bg-primary tw-text-white' : 'tw-bg-muted tw-text-muted-foreground'"
+      >
+        <span v-if="step > 2">✓</span>
+        <span v-else>2</span>
+      </div>
+
+      <!-- Step 3 node -->
+      <div 
+        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-font-heading tw-font-bold tw-text-xs tw-z-10 tw-transition-colors"
+        :class="step >= 3 ? 'tw-bg-primary tw-text-white' : 'tw-bg-muted tw-text-muted-foreground'"
+      >
+        <span>3</span>
+      </div>
+
     </div>
 
     <!-- STEP 1: Personal Details -->
-    <div v-if="step === 1" class="step-content animate-fade">
-      <h3 class="step-title">{{ t.personalProfile }}</h3>
+    <div v-if="step === 1" class="tw-flex tw-flex-col tw-gap-4">
+      <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0">
+        {{ t.personalProfile || 'Personal Profile' }}
+      </h3>
       
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label" for="age">{{ t.ageLabel }}</label>
-          <input type="number" id="age" class="form-control" v-model.number="profile.age" min="1" max="120" />
+      <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
+        <div>
+          <AppLabel for="age">{{ t.ageLabel || 'Age' }}</AppLabel>
+          <AppInput
+            id="age"
+            type="number"
+            v-model.number="profile.age"
+            min="1"
+            max="120"
+          />
         </div>
         
-        <div class="form-group">
-          <label class="form-label" for="gender">{{ t.genderLabel }}</label>
-          <select id="gender" class="form-control" v-model="profile.gender">
-            <option value="Male">{{ t.maleOpt }}</option>
-            <option value="Female">{{ t.femaleOpt }}</option>
-            <option value="Other">{{ t.otherOpt }}</option>
-          </select>
+        <div>
+          <AppLabel for="gender">{{ t.genderLabel || 'Gender' }}</AppLabel>
+          <AppSelect id="gender" v-model="profile.gender">
+            <option value="Male">{{ t.maleOpt || 'Male' }}</option>
+            <option value="Female">{{ t.femaleOpt || 'Female' }}</option>
+            <option value="Other">{{ t.otherOpt || 'Other' }}</option>
+          </AppSelect>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="state">{{ t.stateLabel }}</label>
-          <select id="state" class="form-control" v-model="profile.state">
+        <div>
+          <AppLabel for="state">{{ t.stateLabel || 'State' }}</AppLabel>
+          <AppSelect id="state" v-model="profile.state">
             <option value="Maharashtra">Maharashtra</option>
             <option value="Madhya Pradesh">Madhya Pradesh</option>
             <option value="Gujarat">Gujarat</option>
             <option value="Karnataka">Karnataka</option>
             <option value="Uttar Pradesh">Uttar Pradesh</option>
             <option value="Delhi">Delhi</option>
-          </select>
+          </AppSelect>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="caste">{{ t.casteLabel }}</label>
-          <select id="caste" class="form-control" v-model="profile.caste">
+        <div>
+          <AppLabel for="caste">{{ t.casteLabel || 'Caste Category' }}</AppLabel>
+          <AppSelect id="caste" v-model="profile.caste">
             <option value="General">General / Open</option>
             <option value="OBC">OBC</option>
             <option value="SC">SC</option>
             <option value="ST">ST</option>
-          </select>
+          </AppSelect>
         </div>
       </div>
 
-      <div class="wizard-actions">
+      <div class="tw-flex tw-justify-between tw-mt-4">
         <div></div>
-        <button class="btn btn-primary" @click="emit('update:step', 2)">
-          {{ t.next }}
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-        </button>
+        <AppButton 
+          variant="primary" 
+          size="sm" 
+          class="tw-flex tw-items-center tw-gap-1.5"
+          @click="emit('update:step', 2)"
+        >
+          <span>{{ t.next || 'Next' }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </AppButton>
       </div>
     </div>
 
     <!-- STEP 2: Income and Occupation -->
-    <div v-else-if="step === 2" class="step-content animate-fade">
-      <h3 class="step-title">{{ t.incomeOccupation }}</h3>
+    <div v-else-if="step === 2" class="tw-flex tw-flex-col tw-gap-4">
+      <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0">
+        {{ t.incomeOccupation || 'Income & Occupation' }}
+      </h3>
 
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label" for="income">{{ t.incomeLabel }}</label>
-          <input type="number" id="income" class="form-control" v-model.number="profile.annual_income" />
+      <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4">
+        <div>
+          <AppLabel for="income">{{ t.incomeLabel || 'Annual Income (₹)' }}</AppLabel>
+          <AppInput
+            id="income"
+            type="number"
+            v-model.number="profile.annual_income"
+          />
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="occupation">{{ t.occupationLabel }}</label>
-          <select id="occupation" class="form-control" v-model="profile.occupation">
+        <div>
+          <AppLabel for="occupation">{{ t.occupationLabel || 'Occupation' }}</AppLabel>
+          <AppSelect id="occupation" v-model="profile.occupation">
             <option value="Farmer">Farmer (Kisan)</option>
             <option value="Student">Student (Vidyarthi)</option>
             <option value="Business Owner">Business Owner</option>
             <option value="Unemployed">Unemployed</option>
             <option value="Self-Employed">Self-Employed</option>
             <option value="Other">Other</option>
-          </select>
+          </AppSelect>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="emp-type">{{ t.employeeTypeLabel }}</label>
-          <select id="emp-type" class="form-control" v-model="profile.employee_type">
+        <div>
+          <AppLabel for="emp-type">{{ t.employeeTypeLabel || 'Employment Type' }}</AppLabel>
+          <AppSelect id="emp-type" v-model="profile.employee_type">
             <option value="Unemployed">None / Unemployed</option>
             <option value="Private">Private Employee</option>
             <option value="Government">Government Employee</option>
             <option value="Self-Employed">Self-Employed</option>
-          </select>
+          </AppSelect>
         </div>
       </div>
 
-      <div class="wizard-actions">
-        <button class="btn btn-secondary" @click="emit('update:step', 1)">
-          {{ t.back }}
-        </button>
-        <button class="btn btn-primary" @click="emit('update:step', 3)">
-          {{ t.next }}
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-        </button>
+      <div class="tw-flex tw-justify-between tw-mt-4">
+        <AppButton variant="outline" size="sm" @click="emit('update:step', 1)">
+          {{ t.back || 'Back' }}
+        </AppButton>
+        <AppButton 
+          variant="primary" 
+          size="sm" 
+          class="tw-flex tw-items-center tw-gap-1.5"
+          @click="emit('update:step', 3)"
+        >
+          <span>{{ t.next || 'Next' }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </AppButton>
       </div>
     </div>
 
     <!-- STEP 3: Education & Disability -->
-    <div v-else-if="step === 3" class="step-content animate-fade">
-      <h3 class="step-title">{{ t.educationSpecial }}</h3>
+    <div v-else-if="step === 3" class="tw-flex tw-flex-col tw-gap-4">
+      <h3 class="tw-font-heading tw-font-bold tw-text-sm tw-text-primary tw-m-0">
+        {{ t.educationSpecial || 'Education & Special Criteria' }}
+      </h3>
 
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label" for="education">{{ t.educationLabel }}</label>
-          <select id="education" class="form-control" v-model="profile.education_level">
+      <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
+        <div>
+          <AppLabel for="education">{{ t.educationLabel || 'Education Level' }}</AppLabel>
+          <AppSelect id="education" v-model="profile.education_level">
             <option value="None">None (Uneducated)</option>
             <option value="Primary">Primary Schooling</option>
             <option value="10th Pass">10th Class Pass</option>
             <option value="12th Pass">12th Class Pass</option>
             <option value="Graduate">College Graduate (Degree)</option>
             <option value="Post Graduate">Post Graduate</option>
-          </select>
+          </AppSelect>
         </div>
 
-        <!-- Custom vertical flex aligned checkbox block -->
-        <div class="checkbox-align-wrapper">
-          <input type="checkbox" id="disability" class="checkbox-control" v-model="profile.is_disabled" />
-          <label class="checkbox-label mb-0" for="disability">
-            {{ t.disabilityLabel }}
+        <div class="tw-flex tw-items-center tw-gap-2.5 tw-mt-6">
+          <input 
+            type="checkbox" 
+            id="disability" 
+            v-model="profile.is_disabled" 
+            class="tw-w-5 tw-h-5 tw-cursor-pointer"
+          />
+          <label for="disability" class="tw-text-xs tw-font-bold tw-text-foreground tw-cursor-pointer">
+            {{ t.disabilityLabel || 'Differently-Abled (Divyangjan)' }}
           </label>
         </div>
       </div>
 
-      <div class="wizard-actions">
-        <button class="btn btn-secondary" @click="emit('update:step', 2)">
-          {{ t.back }}
-        </button>
-        <button class="btn btn-accent" @click="emit('submit')" :disabled="checking">
-          {{ checking ? 'Calculating...' : t.calculate }}
-        </button>
+      <div class="tw-flex tw-justify-between tw-mt-4">
+        <AppButton variant="outline" size="sm" @click="emit('update:step', 2)">
+          {{ t.back || 'Back' }}
+        </AppButton>
+        <AppButton 
+          variant="primary" 
+          size="sm" 
+          @click="emit('submit')" 
+          :disabled="checking"
+        >
+          {{ checking ? 'Calculating...' : (t.calculate || 'Check Eligibility') }}
+        </AppButton>
       </div>
     </div>
-  </div>
+  </AppCard>
 </template>
-
-<style scoped>
-.animate-fade {
-  animation: fadeIn 0.3s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Beautiful custom checkbox alignment rules */
-.checkbox-align-wrapper {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-height: 48px;
-  height: auto;
-  align-self: end;
-  margin-bottom: 20px;
-  min-width: 0;
-  padding-top: 14px;
-}
-
-.checkbox-control {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: var(--clr-primary);
-  flex-shrink: 0;
-}
-
-.checkbox-label {
-  cursor: pointer;
-  user-select: none;
-  min-width: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--clr-text-main);
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-.mb-0 { margin-bottom: 0; }
-</style>
