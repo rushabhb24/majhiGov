@@ -34,12 +34,12 @@ watch(() => uiStore.currentLanguage, (newLang) => {
   locale.value = newLang
 }, { immediate: true })
 
-// Watch theme to set dark class on <html>
+// Watch theme to set dark classes on <html>
 watch(() => uiStore.theme, (newTheme) => {
   if (newTheme === 'dark') {
-    document.documentElement.classList.add('dark')
+    document.documentElement.classList.add('dark', 'tw-dark')
   } else {
-    document.documentElement.classList.remove('dark')
+    document.documentElement.classList.remove('dark', 'tw-dark')
   }
 }, { immediate: true })
 

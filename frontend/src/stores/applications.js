@@ -15,7 +15,7 @@ export const useApplicationStore = defineStore('applications', () => {
   async function fetchApplications() {
     const { useAuthStore } = await import('./auth.js')
     const authStore = useAuthStore()
-    if (!authStore.token) return
+    if (!authStore.userProfile) return
 
     try {
       const data = await applicationsApi.fetchUserApplications()
@@ -44,7 +44,7 @@ export const useApplicationStore = defineStore('applications', () => {
     const { useUiStore } = await import('./ui.js')
     const uiStore = useUiStore()
 
-    if (!authStore.token) return
+    if (!authStore.userProfile) return
 
     applySubmitting.value = true
     try {
@@ -91,7 +91,7 @@ export const useApplicationStore = defineStore('applications', () => {
     const { useUiStore } = await import('./ui.js')
     const uiStore = useUiStore()
 
-    if (!authStore.token) return
+    if (!authStore.userProfile) return
 
     applySubmitting.value = true
     try {

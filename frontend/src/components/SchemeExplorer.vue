@@ -99,7 +99,7 @@ function getCategoryLabel(cat) {
 </script>
 
 <template>
-  <div class="tw-max-w-7xl tw-mx-auto tw-px-4 tw-sm:px-6 tw-lg:px-8 tw-py-8">
+  <div id="schemes-section" class="tw-max-w-7xl tw-mx-auto tw-px-4 tw-sm:px-6 tw-lg:px-8 tw-py-8">
     
     <!-- Top Search & Sort Action Container -->
     <div class="tw-flex tw-flex-col sm:tw-flex-row tw-gap-4 tw-items-center tw-justify-between">

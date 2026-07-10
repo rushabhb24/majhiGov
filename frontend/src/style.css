@@ -34,7 +34,7 @@
 }
 
 /* Light Theme Variables */
-.app-wrapper.light {
+:root, .light {
   --clr-bg: hsl(225, 30%, 97%);
   --clr-surface: rgba(255, 255, 255, 0.75);
   --clr-surface-alt: rgba(241, 245, 249, 0.85);
@@ -55,7 +55,7 @@
 }
 
 /* Dark Theme Variables */
-.app-wrapper.dark {
+.dark, .tw-dark {
   --clr-bg: #060814;
   --clr-surface: rgba(15, 23, 42, 0.95);
   --clr-surface-alt: rgba(30, 41, 59, 0.8);

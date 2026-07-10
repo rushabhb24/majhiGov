@@ -23,7 +23,7 @@
   --radius: 1rem;
   --shadow-glow: 0 10px 40px -10px hsl(var(--primary) / 0.35);
 }
-.dark {
+.dark, .tw-dark {
   --background: 222 47% 6%;
   --foreground: 40 33% 98%;
   --card: 222 47% 9%;

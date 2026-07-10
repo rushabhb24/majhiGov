@@ -4,6 +4,7 @@ import { useJobStore } from '../stores/jobs'
 import { usePrivateJobStore } from '../stores/privateJobs'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
+import { useBookmarkStore } from '../stores/bookmarks'
 import JobCard from '../components/JobCard.vue'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import EmptyState from '../components/EmptyState.vue'
@@ -16,6 +17,7 @@ const jobStore = useJobStore()
 const privateJobStore = usePrivateJobStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const bookmarkStore = useBookmarkStore()
 
 const localSearch = ref('')
 const selectedQual = ref('All')
@@ -457,8 +459,10 @@ function processResume(file) {
           :isPrivate="job.isPrivate"
           :currentLanguage="uiStore.currentLanguage"
           :isLoggedIn="authStore.isLoggedIn"
+          :isBookmarked="bookmarkStore.savedJobIds.includes(job.id)"
           @viewDetails="openJobDetails"
           @applyClick="handleApplyAction"
+          @toggleBookmark="bookmarkStore.toggleJobBookmark($event.id)"
         />
       </div>
 

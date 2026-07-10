@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, watch } from 'vue'
+import { useUiStore } from '../../stores/ui'
 
 const props = defineProps({
   open: {
@@ -13,6 +14,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+const uiStore = useUiStore()
 
 const handleKeydown = (e) => {
   if (e.key === 'Escape' && props.open) {
@@ -47,7 +49,8 @@ onUnmounted(() => {
         @click.self="$emit('close')"
       >
         <div
-          class="tw-bg-white dark:tw-bg-slate-900 tw-text-slate-900 dark:tw-text-white tw-border tw-border-solid tw-border-slate-200 dark:tw-border-slate-800 tw-w-full tw-rounded-2xl tw-p-6 tw-relative tw-shadow-2xl tw-max-h-[90vh] tw-overflow-y-auto tw-flex tw-flex-col"
+          class="tw-w-full tw-rounded-2xl tw-p-6 tw-relative tw-shadow-2xl tw-max-h-[90vh] tw-overflow-y-auto tw-flex tw-flex-col"
+          :class="uiStore.theme === 'dark' ? 'tw-bg-slate-900 tw-text-white tw-border tw-border-solid tw-border-slate-800' : 'tw-bg-white tw-text-slate-900 tw-border tw-border-solid tw-border-slate-200'"
           :style="{ maxWidth: maxWidth }"
         >
           <!-- Close button -->

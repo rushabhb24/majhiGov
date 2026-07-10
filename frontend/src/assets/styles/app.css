@@ -24,3 +24,8 @@ button, select, input, textarea {
   color: inherit;
 }
 
+select option {
+  background-color: var(--clr-bg, #ffffff);
+  color: var(--clr-text-main, #000000);
+}
+

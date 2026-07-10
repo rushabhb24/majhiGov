@@ -1,6 +1,38 @@
 <script setup>
+import { onMounted, computed } from 'vue'
+import { useSchemeStore } from '../stores/schemes'
+import { useJobStore } from '../stores/jobs'
+
 defineProps({ t: Object })
 const emit = defineEmits(['start-check'])
+
+const schemeStore = useSchemeStore()
+const jobStore = useJobStore()
+
+const schemeCountText = computed(() => {
+  return schemeStore.totalSchemes > 0 ? `${schemeStore.totalSchemes}` : '15'
+})
+
+const vacanciesCountText = computed(() => {
+  const sum = jobStore.jobs.reduce((acc, job) => acc + (job.vacancies || 0), 0)
+  return sum > 0 ? `${sum.toLocaleString()}` : '200'
+})
+
+function scrollToSchemes() {
+  const el = document.getElementById('schemes-section')
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+onMounted(() => {
+  if (schemeStore.totalSchemes === 0) {
+    schemeStore.fetchSchemes()
+  }
+  if (jobStore.jobs.length === 0) {
+    jobStore.fetchJobs()
+  }
+})
 </script>
 
 <template>
@@ -33,21 +65,21 @@ const emit = defineEmits(['start-check'])
         </button>
         <button 
           class="tw-px-6 tw-py-3 tw-rounded-full tw-bg-white/15 tw-text-white tw-font-heading tw-font-bold tw-text-sm tw-border-2 tw-border-white/40 tw-cursor-pointer tw-transition-all hover:tw-bg-white/20 hover:tw-translate-y-[-2px] hover:tw-shadow-xl"
-          @click="$router.push('/')"
+          @click="scrollToSchemes"
         >
           Browse Schemes
         </button>
       </div>
     </div>
 
-    <!-- Stat Strip -->
-    <div class="glass tw-border-b-0 tw-rounded-t-2xl tw-mx-auto tw-max-w-5xl tw-px-6 tw-py-5 tw-grid tw-grid-cols-2 sm:tw-grid-cols-4 tw-gap-4">
+    <!-- Stat Strip (Opaque Dark Theme Backdrop in both light & dark mode) -->
+    <div class="tw-bg-[#060814]/80 tw-backdrop-blur-md tw-border tw-border-solid tw-border-white/10 tw-border-b-0 tw-rounded-t-2xl tw-mx-auto tw-max-w-5xl tw-px-6 tw-py-5 tw-grid tw-grid-cols-2 sm:tw-grid-cols-4 tw-gap-4">
       <div class="tw-text-center">
-        <div class="tw-font-display tw-text-2xl tw-font-black tw-text-white">10,000+</div>
+        <div class="tw-font-display tw-text-2xl tw-font-black tw-text-white">{{ schemeCountText }}</div>
         <div class="tw-text-[10px] tw-font-bold tw-text-white/80 tw-uppercase tw-tracking-wider tw-mt-1">Schemes</div>
       </div>
       <div class="tw-text-center">
-        <div class="tw-font-display tw-text-2xl tw-font-black tw-text-white">5,000+</div>
+        <div class="tw-font-display tw-text-2xl tw-font-black tw-text-white">{{ vacanciesCountText }}</div>
         <div class="tw-text-[10px] tw-font-bold tw-text-white/80 tw-uppercase tw-tracking-wider tw-mt-1">Vacancies</div>
       </div>
       <div class="tw-text-center">
